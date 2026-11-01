@@ -1,8 +1,8 @@
-# LeaveIn
+# Bus o'Clock
 
 **Know when to head out.**
 
-LeaveIn is a planned location-based Android commuting assistant for Hong Kong. It combines real-time bus arrival estimates with your walking time and a configurable buffer to suggest when to leave for your stop.
+Bus o'Clock is a planned location-based Android commuting assistant for Hong Kong. It combines real-time bus arrival estimates with your walking time and a configurable buffer to suggest when to leave for your stop.
 
 ## Planned MVP
 
