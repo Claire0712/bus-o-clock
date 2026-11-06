@@ -122,7 +122,7 @@ Promise 操作请使用 try/catch。错误是带 `.code` 的 `DataError`。
 
 静态站点、线路及关联目录在内存中缓存一小时，ETA 不在模块中缓存。首次下载目录需要网络；本 MVP 不包含离线站点地图。
 支持 `AbortSignal` 的操作：`getNearbyStops`、`getRoutesForStop`、`getCommute` 和 client 请求。
-浏览器的定位授权过程无法由 AbortSignal 关闭，但取消后的网络操作会终止。
+浏览器的定位授权弹窗无法由 AbortSignal 关闭，但查询会立即以 ABORTED 拒绝；晚到的定位结果不会触发站点下载。
 
 ## 5. React 生命周期示例
 

@@ -80,3 +80,21 @@ hosted backend has been established.
 The data package and handoff are uploaded in PR #1. UI integration, Android
 packaging and physical-device validation remain outstanding application work.
 The detailed project brief is needed to confirm any additional backend deliverables.
+
+## Project brief found and cancellation regression fixed
+
+The authoritative local brief is `Assignment_Project/Instruction of Group Project2026.pdf`
+in the course workspace (LSGI3212 Group Project 2026/27). This supersedes the earlier
+missing-brief note above. It requires a functional Android LBS app, source + APK ZIP,
+contribution list, presentation and group PDF report, due 23 November 2026 at 08:30
+Hong Kong time. It does not mandate a hosted server or database.
+
+The data-layer scope remains KMB access, location, nearby search, departure advice
+and local favourites. Android integration and APK validation remain necessary for
+the whole application; module tests alone do not satisfy that requirement.
+
+Added regression tests for cancellation before nearby search and cancellation while
+waiting for device location. Both failed before the fix; the full suite now passes
+31 tests. Cancellation rejects promptly with ABORTED and late location results do
+not start a catalogue request. The OS permission dialog itself cannot be dismissed
+by this module. No physical-device validation is claimed.

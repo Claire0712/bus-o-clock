@@ -58,3 +58,25 @@ test('watcher ages advice out even while a refresh is stalled', async t => {
   assert.equal(states.at(-1).leaveInSeconds, null);
   stop();
 });
+
+test('already cancelled nearby query never requests location or catalogue', async () => {
+  const controller = new AbortController(); controller.abort();
+  let calls = 0;
+  const bus = createBusOClock({ locationProvider: async () => { calls++; return { latitude: 22.3, longitude: 114.2 }; },
+    client: { getStops: async () => { calls++; return []; } } });
+  await assert.rejects(bus.getNearbyStops({ signal: controller.signal }), { code: 'ABORTED' });
+  assert.equal(calls, 0);
+});
+
+test('cancel during pending location rejects promptly and ignores its late result', async () => {
+  const controller = new AbortController();
+  let release; let calls = 0;
+  const bus = createBusOClock({ locationProvider: () => new Promise(resolve => { release = resolve; }),
+    client: { getStops: async () => { calls++; return []; } } });
+  const pending = bus.getNearbyStops({ signal: controller.signal });
+  const outcome = pending.then(() => 'resolved', e => e.code);
+  await settle(); controller.abort(); await settle();
+  assert.equal(await Promise.race([outcome, Promise.resolve('pending')]), 'ABORTED');
+  release({ latitude: 22.3, longitude: 114.2 }); await settle();
+  assert.equal(calls, 0);
+});

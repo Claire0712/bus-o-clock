@@ -2,7 +2,7 @@ import { calculateDeparture } from './departures.js';
 import { createKmbClient } from './kmb.js';
 import { getCurrentLocation, nearbyStops } from './location.js';
 import { createFavouriteStore } from './favourites.js';
-import { validateCommute } from './validation.js';
+import { DataError, validateCommute } from './validation.js';
 
 export function createBusOClock({ client = createKmbClient(), locationProvider = getCurrentLocation, favouriteStore = createFavouriteStore() } = {}) {
   return {
@@ -10,7 +10,9 @@ export function createBusOClock({ client = createKmbClient(), locationProvider =
     favourites: favouriteStore,
     async getNearbyStops({ point, radiusMeters = 1000, limit = 20, signal } = {}) {
       // Request permission before downloading the catalogue. Manual mode never prompts.
-      const location = point ?? await locationProvider();
+      checkCancellation(signal);
+      const location = point ?? await locate(locationProvider, signal);
+      checkCancellation(signal);
       const stops = await client.getStops({ signal });
       return { location, locationSource: point ? 'manual' : 'device', stops: nearbyStops(stops, location, { radiusMeters, limit }) };
     },
@@ -67,4 +69,21 @@ export function watchCommute({ client, selection, onUpdate, now = Date.now }) {
     clearInterval(tickTimer);
     clearTimeout(refreshTimer);
   };
+}
+
+function checkCancellation(signal) {
+  if (signal?.aborted) throw new DataError('ABORTED', 'Nearby search was cancelled.');
+}
+
+// Permission UI cannot be dismissed programmatically; stop waiting and discard late results.
+function locate(provider, signal) {
+  if (!signal) return provider();
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(new DataError('ABORTED', 'Nearby search was cancelled.'));
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve().then(() => {
+      checkCancellation(signal);
+      return provider();
+    }).then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+  });
 }
