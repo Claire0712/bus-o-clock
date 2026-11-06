@@ -39,3 +39,44 @@ No actual device location was requested during browser verification. Browser/nat
 - A must connect the module to the product UI and choose the frontend build output.
 - B can then configure Android packaging, perform a real-device location test, and produce the APK.
 - There is currently no final app UI or APK in this branch. The diagnostic page is only a data integration check.
+
+## Revalidation — 6 November 2026
+
+Merged current `origin/main` into the data branch, retaining the UI prototype and
+both the project progress description and data verification instructions.
+GitHub reported PR #1 as mergeable after the merge was pushed.
+
+- Deterministic suite: 29 passed, 0 failed after the merge.
+- Live KMB smoke check at 17:39 Hong Kong time: 6,771 stops, five nearby
+  stops, one boardable service at the example stop, five raw ETA rows,
+  three retained departures, advice status `wait`.
+- This check used public example coordinates, not device location.
+
+### Requirements evidence and outstanding dependency
+
+The local course introduction specifies a group project demonstration and an
+individual report including source and dataset where applicable. The local
+`Instruction for Literature Review.pdf` concerns analysis of an existing app;
+it is not a development-project rubric. No detailed development-project rubric
+was found in the course workspace. Compliance with an unseen rubric is therefore
+not claimed.
+
+The available repository scope maps to these implementation and test files:
+
+| Repository requirement | Implementation | Behavioural coverage |
+| --- | --- | --- |
+| Nearby stops and device/manual location | `src/location.js`, `src/commute.js` | Radius/order, invalid points, permission denial, manual point |
+| Live service and ETA retrieval | `src/kmb.js` | Full service identity, terminal exclusion, failures, timeout |
+| Walking time and buffer departure advice | `src/departures.js` | Next catchable bus, midnight, stale data, null ETA, invalid durations |
+| Saved commutes | `src/favourites.js` | Persistence, identity, corrupt storage and quota failure |
+| Refresh and freshness | `src/commute.js` | Refresh failure/recovery, disposal, stale data while request stalls |
+
+Paths in the table are relative to `packages/data`; corresponding tests are in
+`packages/data/test`. This is a client-consumable data/business-logic package,
+not a deployed HTTP server. The documented project architecture uses direct KMB
+requests and local storage. No requirement for accounts, a server database or a
+hosted backend has been established.
+
+The data package and handoff are uploaded in PR #1. UI integration, Android
+packaging and physical-device validation remain outstanding application work.
+The detailed project brief is needed to confirm any additional backend deliverables.
