@@ -13,3 +13,6 @@ local.properties
 *.apk
 *.aab
 *.log
+
+test-results/
+playwright-report/
