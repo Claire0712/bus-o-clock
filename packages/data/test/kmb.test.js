@@ -51,3 +51,13 @@ test('HTTP, malformed payload and abort have distinct errors', async () => {
 test('request timeout is bounded even when transport ignores cancellation', async () => {
   await assert.rejects(createKmbClient({ timeoutMs: 10, fetchImpl: () => new Promise(() => {}) }).getStops(), { code: 'TIMEOUT' });
 });
+
+test('invalid stop coordinates are upstream errors and a retry can recover', async () => {
+  for (const lat of ['   ', 'not-a-number', '91']) {
+    let calls = 0;
+    const client = createKmbClient({ fetchImpl: async () => response([{ ...stop, lat: ++calls === 1 ? lat : stop.lat }]) });
+    await assert.rejects(client.getStops(), { code: 'INVALID_RESPONSE' });
+    assert.equal((await client.getStops())[0].latitude, 22.3);
+    assert.equal(calls, 2);
+  }
+});

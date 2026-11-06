@@ -3,7 +3,7 @@ export const KMB_BASE_URL = 'https://data.etabus.gov.hk/v1/transport/kmb';
 
 function normaliseStop(row) {
   if (!row || typeof row.lat !== 'string' && typeof row.lat !== 'number'
-    || typeof row.long !== 'string' && typeof row.long !== 'number' || row.lat === '' || row.long === '') {
+    || typeof row.long !== 'string' && typeof row.long !== 'number' || String(row.lat).trim() === '' || String(row.long).trim() === '') {
     throw new DataError('INVALID_RESPONSE', 'Invalid stop coordinates.');
   }
   const stop = { id: row.stop, name: names(row, 'name'), latitude: Number(row.lat), longitude: Number(row.long) };
@@ -50,7 +50,12 @@ export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_0
   return {
     async getStops(options = {}) {
       const envelope = await request('stop', { ...options, catalogue: true });
-      return envelope.data.map(normaliseStop);
+      try { return envelope.data.map(normaliseStop); }
+      catch (error) {
+        // Do not retain malformed catalogue rows for the full cache TTL.
+        cache.delete('stop');
+        throw new DataError('INVALID_RESPONSE', 'KMB returned an invalid stop catalogue.', error);
+      }
     },
     async getRoutesForStop(stopId, options = {}) {
       requireValue(/^[A-F0-9]{16}$/.test(stopId), 'Invalid stop ID.');

@@ -98,3 +98,14 @@ waiting for device location. Both failed before the fix; the full suite now pass
 31 tests. Cancellation rejects promptly with ABORTED and late location results do
 not start a catalogue request. The OS permission dialog itself cannot be dismissed
 by this module. No physical-device validation is claimed.
+
+### Catalogue recovery and continuous checks
+
+Added malformed-coordinate regression coverage (blank, nonnumeric and out-of-range
+latitude). The test failed before the fix. Invalid stop catalogues now report
+INVALID_RESPONSE and are evicted from the cache so retry can retrieve corrected
+data. The complete deterministic suite passes 32 tests locally.
+
+`.github/workflows/data-tests.yml` runs the dependency-free test suite under Node 22
+on data-layer pushes and pull requests. Live KMB checks remain opt-in to avoid making
+operator availability a prerequisite for deterministic checks.
