@@ -46,7 +46,15 @@ export function createCapacitorLocationProvider(plugin) {
       const allowed = p => p.location === 'granted' || p.coarseLocation === 'granted';
       if (!allowed(permission)) permission = await plugin.requestPermissions({ permissions: ['location'] });
       if (!allowed(permission)) throw new DataError('LOCATION_DENIED', 'Location permission was denied.');
-      return normalisePosition(await plugin.getCurrentPosition({ enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 }));
+      let timer;
+      try {
+        const timeout = new Promise((resolve, reject) => {
+          timer = setTimeout(() => reject(new DataError('LOCATION_TIMEOUT', 'Native location request timed out. Select a point manually.')), 10_000);
+        });
+        return normalisePosition(await Promise.race([
+          plugin.getCurrentPosition({ enableHighAccuracy: true, timeout: 10_000, maximumAge: 30_000 }), timeout
+        ]));
+      } finally { clearTimeout(timer); }
     } catch (error) {
       if (error instanceof DataError) throw error;
       const code = error.code === 'OS-PLUG-GLOC-0003' ? 'LOCATION_DENIED'

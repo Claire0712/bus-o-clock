@@ -1,0 +1,8 @@
+{
+  "appId": "hk.edu.busoclock",
+  "appName": "Bus o'Clock",
+  "webDir": "dist",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
+  }
+}

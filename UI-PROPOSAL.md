@@ -1,3 +1,5 @@
+> The live implementation is now `index.html` / `app.js`; see README for running and Android packaging. This document describes the original mock prototype.
+
 # Interface prototype and integration plan
 
 ## Current status

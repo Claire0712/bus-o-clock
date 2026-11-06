@@ -27,3 +27,11 @@ test('native adapter requests permission and preserves approximate location accu
   assert.equal((await provider()).accuracyMeters, 900);
   assert.equal(requested, true);
 });
+test('native position request times out even when the plugin never settles', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const provider = createCapacitorLocationProvider({checkPermissions:async()=>({location:'granted'}),getCurrentPosition:()=>new Promise(()=>{})});
+  const outcome = provider().then(()=> 'resolved', e=>e.code);
+  await new Promise(resolve=>setImmediate(resolve));t.mock.timers.tick(10001);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(await Promise.race([outcome,Promise.resolve('pending')]),'LOCATION_TIMEOUT');
+});

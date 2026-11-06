@@ -148,8 +148,7 @@ React 开发模式重复挂载时旧 watcher 会被 cleanup 终止，晚到请�
 
 ## 6. Android 接入条件
 
-目前没有 A 的前端入口和构建配置，因此本分支**不包含可交付 APK，也不宣称真机定位已经测试**。
-已提供原生定位适配器，A 的 UI 完成后，B 可继续配置 Capacitor、Android 权限和打包。
+现已在仓库根目录接入实时前端，并提供 Capacitor Android 工程。构建命令见 README，联调结果见 APP-VERIFICATION.md。原生适配器已接入；模拟器测试不等于真机定位精度测试。
 若选择 Capacitor，各包使用相互兼容的主版本，按[官方 Android 文档](https://capacitorjs.com/docs/android)建立工程。
 
 ```js
