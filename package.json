@@ -8,7 +8,8 @@
     "build": "vite build",
     "test": "node --test packages/data/test/*.test.js",
     "android:sync": "npm run build && cap sync android",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "build:web": "vite build --base=/bus-o-clock/"
   },
   "dependencies": {
     "@capacitor/core": "^7.0.0",

@@ -2,6 +2,12 @@
 
 **Know when to head out.**
 
+Online app: https://claire0712.github.io/bus-o-clock/
+
+The website does not require a local server. Use device location or the labelled public example. Favourites are stored separately in each browser/device.
+
+For GitHub Pages use `npm run build:web` (project subpath). Android continues to use `npm run android:sync` (root path).
+
 LSGI3212 location-based Android commuting assistant for Hong Kong.
 
 ## Live application and Android build
