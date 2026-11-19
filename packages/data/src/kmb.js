@@ -40,11 +40,20 @@ function validateCatalogue(path, value) {
 }
 
 export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_000, catalogueTtlMs = 3_600_000,
-  retries = 2, retryDelayMs = 750, storage = browserStorage(), now = Date.now } = {}) {
+  retries = 2, retryDelayMs = 750, storage = browserStorage(), catalogueBaseUrl = null, now = Date.now } = {}) {
   requireValue(typeof fetchImpl === 'function' && Number.isFinite(timeoutMs) && timeoutMs > 0, 'Fetch and a positive timeout are required.');
   requireValue(Number.isInteger(retries) && retries >= 0 && retries <= 3 && Number.isFinite(retryDelayMs) && retryDelayMs >= 0, 'Invalid retry settings.');
   requireValue(Number.isFinite(catalogueTtlMs) && catalogueTtlMs >= 0, 'Invalid catalogue lifetime.');
   const cache = new Map();
+  function freshSnapshot(value) {
+    const retrieved = Date.parse(value?.snapshot_retrieved_at), generated = Date.parse(value?.generated_timestamp);
+    return [retrieved, generated].every(time => Number.isFinite(time) && time <= now() + 300_000 && now() - time < 36 * 3_600_000);
+  }
+  function remember(path, value) {
+    const entry = { value: structuredClone(value), time: now() };
+    cache.set(path, entry);
+    try { storage?.setItem(CATALOGUE_KEY + path, JSON.stringify(entry)); } catch { /* Storage is optional. */ }
+  }
   function forget(path) {
     cache.delete(path);
     try { storage?.removeItem(CATALOGUE_KEY + path); } catch { /* Storage is optional. */ }
@@ -54,7 +63,8 @@ export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_0
     if (!entry) {
       try { entry = JSON.parse(storage?.getItem(CATALOGUE_KEY + path) ?? 'null'); } catch { /* Ignore corrupt storage. */ }
     }
-    if (entry && Number.isFinite(entry.time) && entry.time <= now() && now() - entry.time < catalogueTtlMs && Array.isArray(entry.value?.data)) {
+    if (entry && Number.isFinite(entry.time) && entry.time <= now() && now() - entry.time < catalogueTtlMs && Array.isArray(entry.value?.data)
+      && (!entry.value.snapshot_retrieved_at || freshSnapshot(entry.value))) {
       try {
         validateCatalogue(path, entry.value);
         cache.set(path, entry);
@@ -68,14 +78,18 @@ export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_0
     if (signal?.aborted) throw new DataError('ABORTED', 'Request cancelled.');
     const cached = catalogue && cachedCatalogue(path);
     if (cached) return cached;
+    // Public daily catalogues can be served from our own site; ETA always uses KMB directly.
+    if (catalogue && catalogueBaseUrl) {
+      try {
+        const url = new URL(`${path.replace(/\/$/, '')}.json`, catalogueBaseUrl).href;
+        const snapshot = await requestOnce(path, { signal, catalogue, attempt: 0, url, requestTimeoutMs: Math.min(timeoutMs, 3000) });
+        if (freshSnapshot(snapshot)) { remember(path, snapshot); return snapshot; }
+      } catch (error) { if (error.code === 'ABORTED') throw error; }
+    }
     for (let attempt = 0; ; attempt++) {
       try {
         const value = await requestOnce(path, { signal, catalogue, attempt });
-        if (catalogue) {
-          const entry = { value: structuredClone(value), time: now() };
-          cache.set(path, entry);
-          try { storage?.setItem(CATALOGUE_KEY + path, JSON.stringify(entry)); } catch { /* Quota/private-mode failures must not break live data. */ }
-        }
+        if (catalogue) remember(path, value);
         return value;
       } catch (error) {
         const transient = ['NETWORK_ERROR', 'TIMEOUT'].includes(error.code)
@@ -85,7 +99,7 @@ export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_0
       }
     }
   }
-  async function requestOnce(path, { signal, catalogue, attempt }) {
+  async function requestOnce(path, { signal, catalogue, attempt, url = `${KMB_BASE_URL}/${path}`, requestTimeoutMs = timeoutMs }) {
     if (signal?.aborted) throw new DataError('ABORTED', 'Request cancelled.');
     const controller = new AbortController();
     let timer;
@@ -93,11 +107,11 @@ export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_0
     const interrupted = new Promise((resolve, reject) => {
       onAbort = () => { controller.abort(); reject(new DataError('ABORTED', 'Request cancelled.')); };
       signal?.addEventListener('abort', onAbort, { once: true });
-      timer = setTimeout(() => { controller.abort(); reject(new DataError('TIMEOUT', 'KMB request timed out.')); }, timeoutMs);
+      timer = setTimeout(() => { controller.abort(); reject(new DataError('TIMEOUT', 'KMB request timed out.')); }, requestTimeoutMs);
     });
     try {
       const work = (async () => {
-        const response = await fetchImpl(`${KMB_BASE_URL}/${path}`, { signal: controller.signal, headers: { Accept: 'application/json' },
+        const response = await fetchImpl(url, { signal: controller.signal, headers: { Accept: 'application/json' },
           cache: catalogue ? (attempt ? 'reload' : 'default') : 'no-store' });
         if (!response.ok) {
           const error = new DataError('HTTP_ERROR', `Bus data is temporarily unavailable (HTTP ${response.status}). Please try again.`);
