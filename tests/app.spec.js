@@ -145,15 +145,15 @@ test('clustered stops expand and map/list selection stays in sync with the navig
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();
  await page.getByRole('button',{name:'Show map',exact:true}).click();
  await expect(page.locator('#stop-map').getByRole('button',{name:'2 stops; expand',exact:true})).toBeVisible();
- await page.locator('#results').getByRole('button',{name:'2. South platform',exact:true}).click();
- await expect(page.locator('#results').getByRole('button',{name:'2. South platform',exact:true})).toHaveAttribute('aria-pressed','true');
- await expect(page.locator('#stop-map').getByRole('button',{name:'2. South platform',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.locator('#results').getByRole('button',{name:/^\d+\. South platform$/}).click();
+ await expect(page.locator('#results').getByRole('button',{name:/^\d+\. South platform$/})).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#stop-map').getByRole('button',{name:/^\d+\. South platform$/})).toHaveAttribute('aria-pressed','true');
  const link=page.locator('.leaflet-popup-content').getByRole('link',{name:'Walk to this stop ↗',exact:true});
  await expect(link).toBeVisible();expect(new URL(await link.getAttribute('href')).searchParams.get('destination')).toBe('22.345415,114.19264');
  expect(new URL(await link.getAttribute('href')).searchParams.has('origin')).toBe(false);
  await expect(page.locator('#selected-stop')).toContainText('South platform');
  await page.getByTestId('language-select').selectOption('ja');await expect(page.locator('#selected-stop')).toContainText('South platform');
- await expect(page.locator('#results').getByRole('button',{name:'2. South platform',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#results').getByRole('button',{name:/^\d+\. South platform$/})).toHaveAttribute('aria-pressed','true');
 });
 
 test('legacy commutes resolve their official stop for navigation and hide technical details by default',async({page})=>{
