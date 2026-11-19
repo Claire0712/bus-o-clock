@@ -1,7 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { createBusOClock, createCapacitorLocationProvider } from './packages/data/src/index.js';
-const bus = createBusOClock(Capacitor.isNativePlatform() ? { locationProvider: createCapacitorLocationProvider(Geolocation) } : {});
+import { createBusOClock, createKmbClient, createCapacitorLocationProvider } from './packages/data/src/index.js';
+const bus = createBusOClock(Capacitor.isNativePlatform() ? { locationProvider: createCapacitorLocationProvider(Geolocation) }
+  : { client: createKmbClient({ catalogueBaseUrl: new URL('data/', document.baseURI).href }) });
 const screen = document.querySelector('#screen'), status = document.querySelector('#status');
 const el = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
