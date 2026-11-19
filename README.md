@@ -51,3 +51,7 @@ watchers; returning to the foreground refreshes advice.
 Data attribution: [KMB / Long Win on DATA.GOV.HK](https://data.gov.hk/en-data/dataset/hk-td-tis_21-etakmb).
 Third-party data remains subject to its provider's terms. No walking-route routing,
 background notifications, multi-operator planning or account synchronisation is provided.
+
+## Member B final handoff (19 November)
+
+See [B verification and handoff](docs/member-b/HANDOFF.md), [report section](docs/member-b/REPORT-SECTION.md), and [three-slide content with speaking notes](docs/member-b/PPT-CONTENT-AND-SCRIPT.md).

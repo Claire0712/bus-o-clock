@@ -1,3 +1,5 @@
+> Historical verification record. For the latest B data checks and handoff (19 November 2026), see [member-b/HANDOFF.md](member-b/HANDOFF.md). Earlier APK results apply to their recorded build, not automatically to later UI revisions.
+
 # Integrated app verification — 6 November 2026
 
 ## Scope

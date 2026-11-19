@@ -1,0 +1,36 @@
+{
+  "version": "0.1.0",
+  "name": "bus-o-clock-app",
+  "dependencies": {
+    "@capacitor/android": {
+      "version": "7.6.10",
+      "resolved": "https://registry.npmjs.org/@capacitor/android/-/android-7.6.10.tgz",
+      "overridden": false
+    },
+    "@capacitor/cli": {
+      "version": "7.6.10",
+      "resolved": "https://registry.npmjs.org/@capacitor/cli/-/cli-7.6.10.tgz",
+      "overridden": false
+    },
+    "@capacitor/core": {
+      "version": "7.6.10",
+      "resolved": "https://registry.npmjs.org/@capacitor/core/-/core-7.6.10.tgz",
+      "overridden": false
+    },
+    "@capacitor/geolocation": {
+      "version": "7.1.8",
+      "resolved": "https://registry.npmjs.org/@capacitor/geolocation/-/geolocation-7.1.8.tgz",
+      "overridden": false
+    },
+    "@playwright/test": {
+      "version": "1.65.0",
+      "resolved": "https://registry.npmjs.org/@playwright/test/-/test-1.65.0.tgz",
+      "overridden": false
+    },
+    "vite": {
+      "version": "6.4.5",
+      "resolved": "https://registry.npmjs.org/vite/-/vite-6.4.5.tgz",
+      "overridden": false
+    }
+  }
+}

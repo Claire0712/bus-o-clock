@@ -1,0 +1,933 @@
+{
+  "verifiedAt": "2026-11-19T06:29:45.650Z",
+  "stopCount": 6745,
+  "live": [
+    {
+      "checkedAt": "2026-11-19T06:29:45.521Z",
+      "stop": {
+        "id": "18492910339410B1",
+        "name": {
+          "en": "CHUK YUEN ESTATE BUS TERMINUS",
+          "tc": "竹園邨總站",
+          "sc": "竹园邨总站"
+        },
+        "latitude": 22.345415,
+        "longitude": 114.19264
+      },
+      "selection": {
+        "stopId": "18492910339410B1",
+        "route": "1",
+        "direction": "O",
+        "serviceType": "1",
+        "stopSequence": 1,
+        "origin": {
+          "en": "CHUK YUEN ESTATE",
+          "tc": "竹園邨",
+          "sc": "竹园邨"
+        },
+        "destination": {
+          "en": "STAR FERRY",
+          "tc": "尖沙咀碼頭",
+          "sc": "尖沙咀码头"
+        },
+        "walkMinutes": 4,
+        "bufferMinutes": 2
+      },
+      "envelope": {
+        "type": "ETA",
+        "version": "1.0",
+        "generated_timestamp": "2026-11-19T14:29:45+08:00",
+        "data": [
+          {
+            "co": "KMB",
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "尖沙咀碼頭",
+            "dest_sc": "尖沙咀码头",
+            "dest_en": "STAR FERRY",
+            "eta_seq": 1,
+            "eta": "2026-11-19T14:29:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "尖沙咀碼頭",
+            "dest_sc": "尖沙咀码头",
+            "dest_en": "STAR FERRY",
+            "eta_seq": 2,
+            "eta": "2026-11-19T14:41:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "尖沙咀碼頭",
+            "dest_sc": "尖沙咀码头",
+            "dest_en": "STAR FERRY",
+            "eta_seq": 3,
+            "eta": "2026-11-19T14:56:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1",
+            "dir": "I",
+            "service_type": 1,
+            "seq": 25,
+            "dest_tc": "竹園邨",
+            "dest_sc": "竹园邨",
+            "dest_en": "CHUK YUEN ESTATE",
+            "eta_seq": 1,
+            "eta": "2026-11-19T14:31:53+08:00",
+            "rmk_tc": "",
+            "rmk_sc": "",
+            "rmk_en": "",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1",
+            "dir": "I",
+            "service_type": 1,
+            "seq": 25,
+            "dest_tc": "竹園邨",
+            "dest_sc": "竹园邨",
+            "dest_en": "CHUK YUEN ESTATE",
+            "eta_seq": 2,
+            "eta": "2026-11-19T14:47:03+08:00",
+            "rmk_tc": "",
+            "rmk_sc": "",
+            "rmk_en": "",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1",
+            "dir": "I",
+            "service_type": 1,
+            "seq": 25,
+            "dest_tc": "竹園邨",
+            "dest_sc": "竹园邨",
+            "dest_en": "CHUK YUEN ESTATE",
+            "eta_seq": 3,
+            "eta": "2026-11-19T14:57:40+08:00",
+            "rmk_tc": "",
+            "rmk_sc": "",
+            "rmk_en": "",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          }
+        ]
+      },
+      "advice": {
+        "status": "wait",
+        "recommended": {
+          "eta": "2026-11-19T06:41:00.000Z",
+          "leaveAt": "2026-11-19T06:35:00.000Z",
+          "arrivalInSeconds": 674,
+          "leaveInSeconds": 314,
+          "catchable": true,
+          "scheduled": true,
+          "destination": {
+            "en": "STAR FERRY",
+            "tc": "尖沙咀碼頭",
+            "sc": "尖沙咀码头"
+          },
+          "remark": {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          "updatedAt": "2026-11-19T06:29:16.000Z"
+        },
+        "leaveInSeconds": 314,
+        "departures": [
+          {
+            "eta": "2026-11-19T06:41:00.000Z",
+            "leaveAt": "2026-11-19T06:35:00.000Z",
+            "arrivalInSeconds": 674,
+            "leaveInSeconds": 314,
+            "catchable": true,
+            "scheduled": true,
+            "destination": {
+              "en": "STAR FERRY",
+              "tc": "尖沙咀碼頭",
+              "sc": "尖沙咀码头"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          },
+          {
+            "eta": "2026-11-19T06:56:00.000Z",
+            "leaveAt": "2026-11-19T06:50:00.000Z",
+            "arrivalInSeconds": 1574,
+            "leaveInSeconds": 1214,
+            "catchable": true,
+            "scheduled": true,
+            "destination": {
+              "en": "STAR FERRY",
+              "tc": "尖沙咀碼頭",
+              "sc": "尖沙咀码头"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          }
+        ],
+        "skippedCount": 0,
+        "generatedAt": "2026-11-19T06:29:45.000Z",
+        "updatedAt": "2026-11-19T06:29:16.000Z",
+        "evaluatedAt": "2026-11-19T06:29:45.521Z",
+        "remarks": [
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          }
+        ],
+        "staleCount": 0
+      }
+    },
+    {
+      "checkedAt": "2026-11-19T06:29:45.579Z",
+      "stop": {
+        "id": "A3ADFCDF8487ADB9",
+        "name": {
+          "en": "SAU MAU PING (CENTRAL)",
+          "tc": "中秀茂坪",
+          "sc": "中秀茂坪"
+        },
+        "latitude": 22.318856,
+        "longitude": 114.231353
+      },
+      "selection": {
+        "stopId": "A3ADFCDF8487ADB9",
+        "route": "1A",
+        "direction": "O",
+        "serviceType": "1",
+        "stopSequence": 1,
+        "origin": {
+          "en": "SAU MAU PING (CENTRAL)",
+          "tc": "中秀茂坪",
+          "sc": "中秀茂坪"
+        },
+        "destination": {
+          "en": "STAR FERRY",
+          "tc": "尖沙咀碼頭",
+          "sc": "尖沙咀码头"
+        },
+        "walkMinutes": 4,
+        "bufferMinutes": 2
+      },
+      "envelope": {
+        "type": "ETA",
+        "version": "1.0",
+        "generated_timestamp": "2026-11-19T14:29:45+08:00",
+        "data": [
+          {
+            "co": "KMB",
+            "route": "1A",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "尖沙咀碼頭",
+            "dest_sc": "尖沙咀码头",
+            "dest_en": "STAR FERRY",
+            "eta_seq": 1,
+            "eta": "2026-11-19T14:34:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1A",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "尖沙咀碼頭",
+            "dest_sc": "尖沙咀码头",
+            "dest_en": "STAR FERRY",
+            "eta_seq": 2,
+            "eta": "2026-11-19T14:42:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1A",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "尖沙咀碼頭",
+            "dest_sc": "尖沙咀码头",
+            "dest_en": "STAR FERRY",
+            "eta_seq": 3,
+            "eta": "2026-11-19T14:50:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1A",
+            "dir": "I",
+            "service_type": 1,
+            "seq": 34,
+            "dest_tc": "中秀茂坪",
+            "dest_sc": "中秀茂坪",
+            "dest_en": "SAU MAU PING (CENTRAL)",
+            "eta_seq": 1,
+            "eta": "2026-11-19T14:33:36+08:00",
+            "rmk_tc": "",
+            "rmk_sc": "",
+            "rmk_en": "",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1A",
+            "dir": "I",
+            "service_type": 1,
+            "seq": 34,
+            "dest_tc": "中秀茂坪",
+            "dest_sc": "中秀茂坪",
+            "dest_en": "SAU MAU PING (CENTRAL)",
+            "eta_seq": 2,
+            "eta": "2026-11-19T14:48:34+08:00",
+            "rmk_tc": "",
+            "rmk_sc": "",
+            "rmk_en": "",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "1A",
+            "dir": "I",
+            "service_type": 1,
+            "seq": 34,
+            "dest_tc": "中秀茂坪",
+            "dest_sc": "中秀茂坪",
+            "dest_en": "SAU MAU PING (CENTRAL)",
+            "eta_seq": 3,
+            "eta": "2026-11-19T14:53:05+08:00",
+            "rmk_tc": "",
+            "rmk_sc": "",
+            "rmk_en": "",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          }
+        ]
+      },
+      "advice": {
+        "status": "wait",
+        "recommended": {
+          "eta": "2026-11-19T06:42:00.000Z",
+          "leaveAt": "2026-11-19T06:36:00.000Z",
+          "arrivalInSeconds": 734,
+          "leaveInSeconds": 374,
+          "catchable": true,
+          "scheduled": true,
+          "destination": {
+            "en": "STAR FERRY",
+            "tc": "尖沙咀碼頭",
+            "sc": "尖沙咀码头"
+          },
+          "remark": {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          "updatedAt": "2026-11-19T06:29:16.000Z"
+        },
+        "leaveInSeconds": 374,
+        "departures": [
+          {
+            "eta": "2026-11-19T06:34:00.000Z",
+            "leaveAt": "2026-11-19T06:28:00.000Z",
+            "arrivalInSeconds": 254,
+            "leaveInSeconds": -106,
+            "catchable": false,
+            "scheduled": true,
+            "destination": {
+              "en": "STAR FERRY",
+              "tc": "尖沙咀碼頭",
+              "sc": "尖沙咀码头"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          },
+          {
+            "eta": "2026-11-19T06:42:00.000Z",
+            "leaveAt": "2026-11-19T06:36:00.000Z",
+            "arrivalInSeconds": 734,
+            "leaveInSeconds": 374,
+            "catchable": true,
+            "scheduled": true,
+            "destination": {
+              "en": "STAR FERRY",
+              "tc": "尖沙咀碼頭",
+              "sc": "尖沙咀码头"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          },
+          {
+            "eta": "2026-11-19T06:50:00.000Z",
+            "leaveAt": "2026-11-19T06:44:00.000Z",
+            "arrivalInSeconds": 1214,
+            "leaveInSeconds": 854,
+            "catchable": true,
+            "scheduled": true,
+            "destination": {
+              "en": "STAR FERRY",
+              "tc": "尖沙咀碼頭",
+              "sc": "尖沙咀码头"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          }
+        ],
+        "skippedCount": 1,
+        "generatedAt": "2026-11-19T06:29:45.000Z",
+        "updatedAt": "2026-11-19T06:29:16.000Z",
+        "evaluatedAt": "2026-11-19T06:29:45.579Z",
+        "remarks": [
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          }
+        ],
+        "staleCount": 0
+      }
+    },
+    {
+      "checkedAt": "2026-11-19T06:29:45.650Z",
+      "stop": {
+        "id": "5E2EC7476D55E0BA",
+        "name": {
+          "en": "STAR FERRY, HARBOUR CITY",
+          "tc": "尖沙咀碼頭,海港城",
+          "sc": "尖沙咀码头,海港城"
+        },
+        "latitude": 22.294304,
+        "longitude": 114.169112
+      },
+      "selection": {
+        "stopId": "5E2EC7476D55E0BA",
+        "route": "2",
+        "direction": "O",
+        "serviceType": "1",
+        "stopSequence": 1,
+        "origin": {
+          "en": "STAR FERRY",
+          "tc": "尖沙咀碼頭",
+          "sc": "尖沙咀码头"
+        },
+        "destination": {
+          "en": "CHEUNG SHA WAN (SO UK ESTATE)",
+          "tc": "長沙灣(蘇屋邨)",
+          "sc": "长沙湾(苏屋邨)"
+        },
+        "walkMinutes": 4,
+        "bufferMinutes": 2
+      },
+      "envelope": {
+        "type": "ETA",
+        "version": "1.0",
+        "generated_timestamp": "2026-11-19T14:29:36+08:00",
+        "data": [
+          {
+            "co": "KMB",
+            "route": "2",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "長沙灣(蘇屋邨)",
+            "dest_sc": "长沙湾(苏屋邨)",
+            "dest_en": "CHEUNG SHA WAN (SO UK ESTATE)",
+            "eta_seq": 1,
+            "eta": "2026-11-19T14:45:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "2",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "長沙灣(蘇屋邨)",
+            "dest_sc": "长沙湾(苏屋邨)",
+            "dest_en": "CHEUNG SHA WAN (SO UK ESTATE)",
+            "eta_seq": 2,
+            "eta": "2026-11-19T15:05:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          },
+          {
+            "co": "KMB",
+            "route": "2",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "dest_tc": "長沙灣(蘇屋邨)",
+            "dest_sc": "长沙湾(苏屋邨)",
+            "dest_en": "CHEUNG SHA WAN (SO UK ESTATE)",
+            "eta_seq": 3,
+            "eta": "2026-11-19T15:25:00+08:00",
+            "rmk_tc": "原定班次",
+            "rmk_sc": "原定班次",
+            "rmk_en": "Scheduled Bus",
+            "data_timestamp": "2026-11-19T14:29:16+08:00"
+          }
+        ]
+      },
+      "advice": {
+        "status": "wait",
+        "recommended": {
+          "eta": "2026-11-19T06:45:00.000Z",
+          "leaveAt": "2026-11-19T06:39:00.000Z",
+          "arrivalInSeconds": 914,
+          "leaveInSeconds": 554,
+          "catchable": true,
+          "scheduled": true,
+          "destination": {
+            "en": "CHEUNG SHA WAN (SO UK ESTATE)",
+            "tc": "長沙灣(蘇屋邨)",
+            "sc": "长沙湾(苏屋邨)"
+          },
+          "remark": {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          "updatedAt": "2026-11-19T06:29:16.000Z"
+        },
+        "leaveInSeconds": 554,
+        "departures": [
+          {
+            "eta": "2026-11-19T06:45:00.000Z",
+            "leaveAt": "2026-11-19T06:39:00.000Z",
+            "arrivalInSeconds": 914,
+            "leaveInSeconds": 554,
+            "catchable": true,
+            "scheduled": true,
+            "destination": {
+              "en": "CHEUNG SHA WAN (SO UK ESTATE)",
+              "tc": "長沙灣(蘇屋邨)",
+              "sc": "长沙湾(苏屋邨)"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          },
+          {
+            "eta": "2026-11-19T07:05:00.000Z",
+            "leaveAt": "2026-11-19T06:59:00.000Z",
+            "arrivalInSeconds": 2114,
+            "leaveInSeconds": 1754,
+            "catchable": true,
+            "scheduled": true,
+            "destination": {
+              "en": "CHEUNG SHA WAN (SO UK ESTATE)",
+              "tc": "長沙灣(蘇屋邨)",
+              "sc": "长沙湾(苏屋邨)"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          },
+          {
+            "eta": "2026-11-19T07:25:00.000Z",
+            "leaveAt": "2026-11-19T07:19:00.000Z",
+            "arrivalInSeconds": 3314,
+            "leaveInSeconds": 2954,
+            "catchable": true,
+            "scheduled": true,
+            "destination": {
+              "en": "CHEUNG SHA WAN (SO UK ESTATE)",
+              "tc": "長沙灣(蘇屋邨)",
+              "sc": "长沙湾(苏屋邨)"
+            },
+            "remark": {
+              "en": "Scheduled Bus",
+              "tc": "原定班次",
+              "sc": "原定班次"
+            },
+            "updatedAt": "2026-11-19T06:29:16.000Z"
+          }
+        ],
+        "skippedCount": 0,
+        "generatedAt": "2026-11-19T06:29:36.000Z",
+        "updatedAt": "2026-11-19T06:29:16.000Z",
+        "evaluatedAt": "2026-11-19T06:29:45.650Z",
+        "remarks": [
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          },
+          {
+            "en": "Scheduled Bus",
+            "tc": "原定班次",
+            "sc": "原定班次"
+          }
+        ],
+        "staleCount": 0
+      }
+    }
+  ],
+  "calculations": [
+    {
+      "name": "10-minute ETA minus 4-minute walk and 2-minute buffer",
+      "source": "synthetic deterministic fixture, not live observations",
+      "now": "2026-11-19T04:00:00.000Z",
+      "selection": {
+        "stopId": "18492910339410B1",
+        "route": "1",
+        "direction": "O",
+        "serviceType": "1",
+        "stopSequence": 1,
+        "walkMinutes": 4,
+        "bufferMinutes": 2
+      },
+      "envelope": {
+        "generated_timestamp": "2026-11-19T04:00:00.000Z",
+        "data": [
+          {
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "eta": "2026-11-19T04:10:00.000Z",
+            "data_timestamp": "2026-11-19T04:00:00.000Z"
+          }
+        ]
+      },
+      "expected": {
+        "status": "wait",
+        "leaveInSeconds": 240
+      },
+      "actual": {
+        "status": "wait",
+        "recommended": {
+          "eta": "2026-11-19T04:10:00.000Z",
+          "leaveAt": "2026-11-19T04:04:00.000Z",
+          "arrivalInSeconds": 600,
+          "leaveInSeconds": 240,
+          "catchable": true,
+          "scheduled": false,
+          "destination": {
+            "en": "",
+            "tc": "",
+            "sc": ""
+          },
+          "remark": {
+            "en": "",
+            "tc": "",
+            "sc": ""
+          },
+          "updatedAt": "2026-11-19T04:00:00.000Z"
+        },
+        "leaveInSeconds": 240,
+        "departures": [
+          {
+            "eta": "2026-11-19T04:10:00.000Z",
+            "leaveAt": "2026-11-19T04:04:00.000Z",
+            "arrivalInSeconds": 600,
+            "leaveInSeconds": 240,
+            "catchable": true,
+            "scheduled": false,
+            "destination": {
+              "en": "",
+              "tc": "",
+              "sc": ""
+            },
+            "remark": {
+              "en": "",
+              "tc": "",
+              "sc": ""
+            },
+            "updatedAt": "2026-11-19T04:00:00.000Z"
+          }
+        ],
+        "skippedCount": 0,
+        "generatedAt": "2026-11-19T04:00:00.000Z",
+        "updatedAt": "2026-11-19T04:00:00.000Z",
+        "evaluatedAt": "2026-11-19T04:00:00.000Z",
+        "remarks": [],
+        "staleCount": 0
+      }
+    },
+    {
+      "name": "Skip 3-minute bus, choose 14-minute bus",
+      "source": "synthetic deterministic fixture, not live observations",
+      "now": "2026-11-19T04:00:00.000Z",
+      "selection": {
+        "stopId": "18492910339410B1",
+        "route": "1",
+        "direction": "O",
+        "serviceType": "1",
+        "stopSequence": 1,
+        "walkMinutes": 4,
+        "bufferMinutes": 2
+      },
+      "envelope": {
+        "generated_timestamp": "2026-11-19T04:00:00.000Z",
+        "data": [
+          {
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "eta": "2026-11-19T04:03:00.000Z",
+            "data_timestamp": "2026-11-19T04:00:00.000Z"
+          },
+          {
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "eta": "2026-11-19T04:14:00.000Z",
+            "data_timestamp": "2026-11-19T04:00:00.000Z"
+          }
+        ]
+      },
+      "expected": {
+        "status": "wait",
+        "leaveInSeconds": 480
+      },
+      "actual": {
+        "status": "wait",
+        "recommended": {
+          "eta": "2026-11-19T04:14:00.000Z",
+          "leaveAt": "2026-11-19T04:08:00.000Z",
+          "arrivalInSeconds": 840,
+          "leaveInSeconds": 480,
+          "catchable": true,
+          "scheduled": false,
+          "destination": {
+            "en": "",
+            "tc": "",
+            "sc": ""
+          },
+          "remark": {
+            "en": "",
+            "tc": "",
+            "sc": ""
+          },
+          "updatedAt": "2026-11-19T04:00:00.000Z"
+        },
+        "leaveInSeconds": 480,
+        "departures": [
+          {
+            "eta": "2026-11-19T04:03:00.000Z",
+            "leaveAt": "2026-11-19T03:57:00.000Z",
+            "arrivalInSeconds": 180,
+            "leaveInSeconds": -180,
+            "catchable": false,
+            "scheduled": false,
+            "destination": {
+              "en": "",
+              "tc": "",
+              "sc": ""
+            },
+            "remark": {
+              "en": "",
+              "tc": "",
+              "sc": ""
+            },
+            "updatedAt": "2026-11-19T04:00:00.000Z"
+          },
+          {
+            "eta": "2026-11-19T04:14:00.000Z",
+            "leaveAt": "2026-11-19T04:08:00.000Z",
+            "arrivalInSeconds": 840,
+            "leaveInSeconds": 480,
+            "catchable": true,
+            "scheduled": false,
+            "destination": {
+              "en": "",
+              "tc": "",
+              "sc": ""
+            },
+            "remark": {
+              "en": "",
+              "tc": "",
+              "sc": ""
+            },
+            "updatedAt": "2026-11-19T04:00:00.000Z"
+          }
+        ],
+        "skippedCount": 1,
+        "generatedAt": "2026-11-19T04:00:00.000Z",
+        "updatedAt": "2026-11-19T04:00:00.000Z",
+        "evaluatedAt": "2026-11-19T04:00:00.000Z",
+        "remarks": [],
+        "staleCount": 0
+      }
+    },
+    {
+      "name": "No ETA",
+      "source": "synthetic deterministic fixture, not live observations",
+      "now": "2026-11-19T04:00:00.000Z",
+      "selection": {
+        "stopId": "18492910339410B1",
+        "route": "1",
+        "direction": "O",
+        "serviceType": "1",
+        "stopSequence": 1,
+        "walkMinutes": 4,
+        "bufferMinutes": 2
+      },
+      "envelope": {
+        "generated_timestamp": "2026-11-19T04:00:00.000Z",
+        "data": [
+          {
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "eta": null,
+            "data_timestamp": "2026-11-19T04:00:00.000Z"
+          }
+        ]
+      },
+      "expected": {
+        "status": "no-service",
+        "leaveInSeconds": null
+      },
+      "actual": {
+        "status": "no-service",
+        "recommended": null,
+        "leaveInSeconds": null,
+        "departures": [],
+        "skippedCount": 0,
+        "generatedAt": "2026-11-19T04:00:00.000Z",
+        "updatedAt": "2026-11-19T04:00:00.000Z",
+        "evaluatedAt": "2026-11-19T04:00:00.000Z",
+        "remarks": [],
+        "staleCount": 0
+      }
+    },
+    {
+      "name": "Response older than 120 seconds",
+      "source": "synthetic deterministic fixture, not live observations",
+      "now": "2026-11-19T04:00:00.000Z",
+      "selection": {
+        "stopId": "18492910339410B1",
+        "route": "1",
+        "direction": "O",
+        "serviceType": "1",
+        "stopSequence": 1,
+        "walkMinutes": 4,
+        "bufferMinutes": 2
+      },
+      "envelope": {
+        "generated_timestamp": "2026-11-19T03:57:59.000Z",
+        "data": [
+          {
+            "route": "1",
+            "dir": "O",
+            "service_type": 1,
+            "seq": 1,
+            "eta": "2026-11-19T04:10:00.000Z",
+            "data_timestamp": "2026-11-19T04:00:00.000Z"
+          }
+        ]
+      },
+      "expected": {
+        "status": "stale",
+        "leaveInSeconds": null
+      },
+      "actual": {
+        "status": "stale",
+        "recommended": null,
+        "leaveInSeconds": null,
+        "departures": [],
+        "skippedCount": 0,
+        "generatedAt": "2026-11-19T03:57:59.000Z",
+        "updatedAt": null,
+        "evaluatedAt": "2026-11-19T04:00:00.000Z",
+        "remarks": [],
+        "staleCount": 0
+      }
+    }
+  ]
+}
