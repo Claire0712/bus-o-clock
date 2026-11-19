@@ -22,18 +22,23 @@ function normalisePosition(position) {
   return { ...point, accuracyMeters: position.coords.accuracy, timestamp: position.timestamp };
 }
 
-export async function getCurrentLocation({ geolocation = globalThis.navigator?.geolocation, timeoutMs = 10_000 } = {}) {
+export async function getCurrentLocation({ geolocation = globalThis.navigator?.geolocation, timeoutMs = 30_000 } = {}) {
   requireValue(Number.isFinite(timeoutMs) && timeoutMs > 0, 'Invalid location timeout.');
-  if (!geolocation) throw new DataError('LOCATION_UNAVAILABLE', 'Geolocation is unavailable. Use HTTPS/localhost or select a point manually.');
+  if (!geolocation) throw new DataError('LOCATION_UNAVAILABLE', 'Location is not supported in this window. Open the app in your browser or enter coordinates manually.');
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new DataError('LOCATION_TIMEOUT', 'Location request timed out.')), timeoutMs);
+    // Let the browser time position acquisition. A separate wall-clock timer
+    // also counts time spent reading the permission prompt and rejects too early.
+    // https://www.w3.org/TR/geolocation/#timeout-member
     geolocation.getCurrentPosition(position => {
-      clearTimeout(timer);
       try { resolve(normalisePosition(position)); } catch (error) { reject(error); }
     }, error => {
-      clearTimeout(timer);
       const code = ({ 1: 'LOCATION_DENIED', 2: 'LOCATION_UNAVAILABLE', 3: 'LOCATION_TIMEOUT' })[error.code] ?? 'LOCATION_UNAVAILABLE';
-      reject(new DataError(code, 'Could not obtain location. You can select a point manually.', error));
+      const messages = {
+        LOCATION_DENIED: 'Location access is blocked. Allow location for this website and browser in your device settings, then try again. Permissions in another browser do not apply here.',
+        LOCATION_UNAVAILABLE: 'The browser could not determine your position. Check device Location Services and Wi-Fi, then retry or enter coordinates manually.',
+        LOCATION_TIMEOUT: 'The location service did not return a position within the allowed time. Try again or enter coordinates manually.'
+      };
+      reject(new DataError(code, messages[code], error));
     }, { enableHighAccuracy: true, maximumAge: 30_000, timeout: timeoutMs });
   });
 }
