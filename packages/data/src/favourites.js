@@ -8,7 +8,23 @@ function browserStorage() {
 function sanitise(value) {
   validateCommute(value);
   requireValue(typeof value.label === 'string' && value.label.trim().length > 0 && value.label.length <= 100, 'A label of 1 to 100 characters is required.');
-  return { id: [value.stopId, value.route, value.direction, value.serviceType, value.stopSequence].join(':'),
+  const extra = {};
+  if (value.timePresets != null) {
+    requireValue(value.timePresets && ['regular','extra'].includes(value.activePreset), 'Invalid time plan.');
+    extra.timePresets = {};
+    for (const id of ['regular','extra']) {
+      const p = value.timePresets[id];
+      requireValue(p && [p.walkMinutes,p.bufferMinutes].every(n => Number.isFinite(n) && n >= 0 && n <= 180), 'Invalid preset times.');
+      extra.timePresets[id] = { walkMinutes:p.walkMinutes, bufferMinutes:p.bufferMinutes };
+    }
+    requireValue(value.walkMinutes === extra.timePresets[value.activePreset].walkMinutes && value.bufferMinutes === extra.timePresets[value.activePreset].bufferMinutes, 'Active plan must match commute times.');
+    extra.activePreset = value.activePreset;
+  }
+  for (const field of ['stopName','destination']) if (value[field]) {
+    requireValue(typeof value[field] === 'object' && ['en','tc','sc'].every(k => typeof value[field][k] === 'string' && value[field][k].length <= 300), 'Invalid stop metadata.');
+    extra[field] = Object.fromEntries(['en','tc','sc'].map(k => [k,value[field][k]]));
+  }
+  return { ...extra, id: [value.stopId, value.route, value.direction, value.serviceType, value.stopSequence].join(':'),
     label: value.label.trim(), stopId: value.stopId, route: value.route, direction: value.direction,
     serviceType: value.serviceType, stopSequence: value.stopSequence,
     walkMinutes: value.walkMinutes, bufferMinutes: value.bufferMinutes };
