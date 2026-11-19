@@ -17,6 +17,29 @@ test('browser location returns accuracy and normalises permission denial', async
   await assert.rejects(getCurrentLocation({ geolocation: { getCurrentPosition(ok, fail) { fail({ code: 1 }); } } }), { code: 'LOCATION_DENIED' });
   await assert.rejects(getCurrentLocation({ geolocation: null }), { code: 'LOCATION_UNAVAILABLE' });
 });
+test('waiting for browser permission does not consume the acquisition timeout', async t => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let complete;
+  const outcome = getCurrentLocation({ timeoutMs: 10_000, geolocation: {
+    getCurrentPosition(ok) { complete = ok; }
+  } }).then(() => 'success', error => error.code);
+  t.mock.timers.tick(15_000);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(await Promise.race([outcome, Promise.resolve('pending')]), 'pending');
+  complete({ coords: { latitude: 22.3, longitude: 114.2, accuracy: 25 }, timestamp: 100 });
+  assert.equal(await outcome, 'success');
+});
+test('browser acquisition timeout and unavailable service remain distinct errors', async () => {
+  for (const [browserCode, code] of [[2, 'LOCATION_UNAVAILABLE'], [3, 'LOCATION_TIMEOUT']]) {
+    const providerError = { code: browserCode, message: 'Provider could not return a position' };
+    await assert.rejects(getCurrentLocation({ geolocation: {
+      getCurrentPosition(ok, fail, options) {
+        assert.equal(options.timeout, 30_000);
+        fail(providerError);
+      }
+    } }), error => error.code === code && error.cause === providerError);
+  }
+});
 test('native adapter requests permission and preserves approximate location accuracy', async () => {
   let requested = false;
   const provider = createCapacitorLocationProvider({
