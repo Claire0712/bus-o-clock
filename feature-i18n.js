@@ -1,5 +1,6 @@
 const codes = ['en','zh-Hant','zh-Hans','ja','ko','fr','es','de','pt'];
 const rows = [
+['moreStops','Show more stops','顯示更多車站','显示更多车站','さらに表示','정류장 더 보기','Afficher plus d’arrêts','Mostrar más paradas','Weitere Haltestellen anzeigen','Mostrar mais paragens'],
 ['searchLabel','Stop name or route number','站名或路線號碼','站名或路线号码','停留所名または系統番号','정류장명 또는 노선 번호','Arrêt ou numéro de ligne','Parada o número de línea','Haltestelle oder Liniennummer','Paragem ou número da linha'],
 ['searchPlaceholder','e.g. Hung Hom / 紅磡 / 215X','例如：紅磡／Hung Hom／215X','例如：红磡／Hung Hom／215X','例：Hung Hom / 紅磡 / 215X','예: Hung Hom / 紅磡 / 215X','Ex. Hung Hom / 紅磡 / 215X','Ej. Hung Hom / 紅磡 / 215X','Z. B. Hung Hom / 紅磡 / 215X','Ex. Hung Hom / 紅磡 / 215X'],
 ['searchGo','Search','搜尋','搜索','検索','검색','Rechercher','Buscar','Suchen','Pesquisar'],
