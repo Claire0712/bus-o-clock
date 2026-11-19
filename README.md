@@ -39,6 +39,16 @@ requests foreground coarse/fine location only when the user chooses Use my locat
 App data backup is disabled; favourites remain local. Backgrounding stops live
 watchers; returning to the foreground refreshes advice.
 
+## Finding and saving a bus
+
+- Search official Chinese or English stop names or an exact KMB route number without giving location access. Results identify each stop; selecting a service retains its exact stop ID, direction, service type and stop sequence.
+- Open the interactive map to select numbered stops, or move the map and search around its centre. If map tiles fail, the search and stop list remain usable. The default Hong Kong view is labelled and does not claim to be your location.
+- Arrival rows show both minutes remaining and the expected clock time in Hong Kong, with a next-day label after midnight. The highlighted recommended bus has a short explanation based on the walking and buffer times; stale or failed ETA requests clear the recommendation.
+- Edit and save two time plans, **Usual** and **Extra time**, for each commute. Switch between them on Home; both sets of values persist locally. Existing saved commutes remain compatible.
+- Refresh stop data from Nearby to clear the local catalogue cache and repeat the current search. Web catalogues have a 36-hour snapshot freshness limit, and ETA always comes from KMB directly. This cannot correct errors in the upstream provider's data.
+
+Map rendering uses [Leaflet](https://leafletjs.com/) and standard [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/), with visible attribution. Tiles require internet and are loaded only when the map is opened; no bulk or offline tile download is provided. Maps show stop locations, not walking routes. Walking and buffer times remain user-entered estimates.
+
 ## Interface languages
 
 Choose a language in the header or Settings: English, Traditional Chinese, Simplified Chinese, Japanese, Korean, French, Spanish, German or Portuguese. The choice is stored on the current browser/device. Changing language preserves the selected stop, route, saved commutes and unsaved commute-form inputs.
@@ -50,7 +60,8 @@ Public-review research and proposed priorities: [User needs evidence](docs/USER-
 ## Source and integration
 
 - `app.js`, `app.css`, `index.html`: live interface, adapted from the original prototype.
-- `i18n.js`: nine interface languages, saved language preference and official-name fallback.
+- `i18n.js`, `feature-i18n.js`: nine interface languages, saved language preference and official-name fallback.
+- `stop-map.js`, `journey-tools.js`: interactive stop map, clock labels, explanations and time plans.
 - `packages/data`: KMB client, location, departure calculations, persistence and tests.
 - `android`: Capacitor native project and foreground location permissions.
 - `tests/app.spec.js`: browser integration and error-state checks.
