@@ -4,6 +4,7 @@ import { createBusOClock, createKmbClient, createCapacitorLocationProvider } fro
 import { createI18n, LANGUAGES } from './i18n.js';
 import { PLAN_IDS, timePlans, arrivalDay, recommendationReason } from './journey-tools.js';
 import { createStopMap } from './stop-map.js';
+import { walkingDirectionsUrl } from './navigation.js';
 
 const bus = createBusOClock(Capacitor.isNativePlatform() ? { locationProvider: createCapacitorLocationProvider(Geolocation) }
   : { client: createKmbClient({ catalogueBaseUrl: new URL('data/', document.baseURI).href }) });
@@ -15,6 +16,7 @@ let page, selected, current, stopWatch = () => {}, controller, generation = 0;
 let nearbyResult, routeStop, routeResults, lastAdvice, formDraft, manualDraft = {};
 let searchQuery = '', searchResult, routeFilter = null, mapOpen = false, mapInstance, mapView, planDraft;
 let notice = () => '', preferenceNotSaved = false;
+let focusedStopId = null;
 current = bus.favourites.load().favourites[0];
 
 function message(key = '', values) {
@@ -31,6 +33,30 @@ function fail(error) {
 function reset() { generation++; controller?.abort(); controller = new AbortController(); stopWatch(); stopWatch = () => {}; }
 function button(text, action, style = 'secondary') {
   const b = document.createElement('button'); b.className = `btn ${style}`; b.textContent = text; b.onclick = action; return b;
+}
+function navigationLink(point,style='primary') {
+  const link=document.createElement('a');link.className=`btn ${style} walking-link`;
+  link.href=walkingDirectionsUrl(point);link.target=Capacitor.isNativePlatform()?'_self':'_blank';link.rel='noopener noreferrer';
+  link.textContent=t('walkToStop')+' ↗';return link;
+}
+function stopDetails(stop) {
+  const details=document.createElement('details');details.className='stop-details';
+  const summary=document.createElement('summary');summary.textContent=t('stopDetails');
+  const info=document.createElement('p');info.textContent=`ID: ${stop.id??stop.stopId}`;details.append(summary,info);return details;
+}
+async function savedNavigation(host,value) {
+  const token=generation;
+  host.textContent=t('navigationLoading');
+  try {
+    const point=value.stopPoint??(await bus.client.getStops({signal:controller.signal})).find(s=>s.id===value.stopId);
+    if(token!==generation||!host.isConnected)return;
+    const link=navigationLink(point,'secondary'),hint=document.createElement('p');hint.className='sub';hint.textContent=t('navigationHint');
+    host.replaceChildren(link,hint);
+  } catch(error) {
+    if(token!==generation||!host.isConnected||error.code==='ABORTED')return;
+    const hint=document.createElement('p');hint.className='sub';hint.textContent=t('navigationUnavailable');
+    host.replaceChildren(hint,button(t('refreshStops'),()=>savedNavigation(host,value),'quiet'));
+  }
 }
 function languageControl(id) {
   const root = document.createElement('div'); root.className = 'language-control';
@@ -68,7 +94,7 @@ function captureDrafts() {
     if (planDraft) planDraft.plans[planDraft.active] = {walkMinutes:formDraft.walk,bufferMinutes:formDraft.buffer};
   }
   if (page === 'nearby' && el('latitude')) {
-    manualDraft = { latitude:el('latitude').value, longitude:el('longitude').value, open:el('manual-location').open };
+    manualDraft = { latitude:el('latitude').value, longitude:el('longitude').value, open:el('manual-location').open, otherOpen:el('other-options').open };
     searchQuery = el('stop-query').value;
   }
 }
@@ -108,7 +134,7 @@ function updateNavigation() {
 }
 function show(next) {
   reset(); page = next; message(); formDraft = null; planDraft = null; lastAdvice = null;
-  if (next === 'nearby') { nearbyResult = null; searchResult = null; searchQuery = ''; manualDraft = {}; mapView = null; }
+  if (next === 'nearby') { nearbyResult = null; searchResult = null; searchQuery = ''; manualDraft = {}; mapView = null; focusedStopId = null; }
   window.scrollTo(0, 0); renderPage();
   if (['home','details'].includes(page)) startAdvice();
 }
@@ -125,7 +151,8 @@ function renderPage() {
       empty.innerHTML = `<span class="empty-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>${esc(t('emptyTitle'))}</h3><p>${esc(t('emptyText'))}</p>`;
       empty.append(button(t('findStop'), () => show('nearby'), 'primary')); screen.append(empty); return;
     }
-    screen.insertAdjacentHTML('beforeend', `<p class="saved-stop">${esc(i18n.officialText(current.stopName))} ${esc(current.destination ? '→ '+i18n.officialText(current.destination) : t(current.direction === 'O' ? 'outbound' : 'inbound'))} · ${esc(t('stopId'))} ${esc(current.stopId.slice(-4))}</p><div class="card hero"><span>${esc(t('commuteRoute', {label:current.label, route:current.route}))}</span><div id="advice" class="big"></div></div><div id="quick-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('walkBuffer', {walk:current.walkMinutes, buffer:current.bufferMinutes}))}</p><p id="freshness" class="sub"></p><div id="arrivals"></div><section id="why" class="reason-card" hidden><h3>${esc(t('whyTitle'))}</h3><p id="reason"></p></section><p class="sub">${esc(t('adviceEstimate'))}</p><p id="remarks" class="sub"></p>`);
+    screen.insertAdjacentHTML('beforeend', `<p class="saved-stop">${esc(i18n.officialText(current.stopName))} ${esc(current.destination ? '→ '+i18n.officialText(current.destination) : t(current.direction === 'O' ? 'outbound' : 'inbound'))}</p><div id="saved-stop-details"></div><div class="card hero"><span>${esc(t('commuteRoute', {label:current.label, route:current.route}))}</span><div id="advice" class="big"></div></div><div id="quick-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('walkBuffer', {walk:current.walkMinutes, buffer:current.bufferMinutes}))}</p><p id="freshness" class="sub"></p><div id="arrivals"></div><section id="why" class="reason-card" hidden><h3>${esc(t('whyTitle'))}</h3><p id="reason"></p></section><p class="sub">${esc(t('adviceEstimate'))}</p><p id="remarks" class="sub"></p><div id="saved-navigation"></div>`);
+    el('saved-stop-details').append(stopDetails(current));savedNavigation(el('saved-navigation'),current);
     const plans = timePlans(current);
     for(const id of PLAN_IDS) {
       const choice = button(t(id),()=>{ try {current=bus.favourites.save({...current,...plans[id],timePresets:plans,activePreset:id});show('home');} catch(e){fail(e);} });
@@ -136,20 +163,27 @@ function renderPage() {
     }, 'quiet'));
     renderAdvice(lastAdvice);
   } else if (page === 'nearby') {
-    screen.innerHTML = `<h2>${esc(t('chooseStop'))}</h2><p class="page-intro">${esc(t('nearbyIntro'))}</p><form id="stop-search" class="search-form"><label for="stop-query">${esc(t('searchLabel'))}</label><div class="search-row"><input id="stop-query" type="search" maxlength="100" placeholder="${esc(t('searchPlaceholder'))}" value="${esc(searchQuery)}"><button class="btn primary" type="submit">${esc(t('searchGo'))}</button></div><p class="sub">${esc(t('searchHint'))}</p></form><div id="locationActions"></div><details id="manual-location"><summary>${esc(t('manualLocation'))}</summary><label for="latitude">${esc(t('latitude'))}</label><input id="latitude" type="number" step="any" min="-90" max="90"><label for="longitude">${esc(t('longitude'))}</label><input id="longitude" type="number" step="any" min="-180" max="180"><div id="manual"></div></details><div id="map-actions"></div><section id="map-section"></section><p id="result-summary" class="sub"></p><div id="results"></div><div id="catalogue-actions"></div>`;
+    screen.innerHTML = `<h2>${esc(t('chooseStop'))}</h2><p class="page-intro">${esc(t('nearbyIntro'))}</p>
+      <form id="stop-search" class="search-form"><label for="stop-query">${esc(t('searchLabel'))}</label><div class="search-row"><input id="stop-query" type="search" maxlength="100" placeholder="${esc(t('searchPlaceholder'))}" value="${esc(searchQuery)}"><button class="btn primary" type="submit">${esc(t('searchGo'))}</button></div><p class="sub">${esc(t('searchHint'))}</p></form>
+      <div class="nearby-actions"><div id="locationActions"></div><div id="map-actions"></div></div>
+      <details id="other-options" class="other-options"><summary>${esc(t('otherOptions'))}</summary><div id="example"></div><details id="manual-location"><summary>${esc(t('manualLocation'))}</summary><label for="latitude">${esc(t('latitude'))}</label><input id="latitude" type="number" step="any" min="-90" max="90"><label for="longitude">${esc(t('longitude'))}</label><input id="longitude" type="number" step="any" min="-180" max="180"><div id="manual"></div></details><div id="catalogue-actions"></div></details>
+      <section id="map-section"></section><section id="selected-stop" class="selected-stop" hidden></section><p id="result-summary" class="sub"></p><div id="results"></div>`;
     el('stop-search').onsubmit=e=>{e.preventDefault();loadSearch(el('stop-query').value);};
-    el('latitude').value = manualDraft.latitude ?? ''; el('longitude').value = manualDraft.longitude ?? ''; el('manual-location').open = !!manualDraft.open;
-    el('locationActions').append(button(t('useLocation'), () => loadNearby(), 'primary'), button(t('publicExample'), () => loadNearby({latitude:22.345415, longitude:114.192640})));
-    el('manual').append(button(t('findCoordinates'), () => {
-      if (!el('latitude').value || !el('longitude').value) { message('enterCoordinates'); return; }
-      loadNearby({latitude:Number(el('latitude').value), longitude:Number(el('longitude').value)});
+    el('latitude').value=manualDraft.latitude??'';el('longitude').value=manualDraft.longitude??'';
+    el('manual-location').open=!!manualDraft.open;el('other-options').open=!!manualDraft.otherOpen;
+    el('locationActions').append(button(t('useLocation'),()=>loadNearby(),'secondary'));
+    el('example').append(button(t('publicExample'),()=>loadNearby({latitude:22.345415,longitude:114.192640})));
+    el('manual').append(button(t('findCoordinates'),()=>{
+      if(!el('latitude').value||!el('longitude').value){message('enterCoordinates');return;}
+      loadNearby({latitude:Number(el('latitude').value),longitude:Number(el('longitude').value)});
     }));
     el('map-actions').append(button(t(mapOpen?'hideMap':'showMap'),()=>{captureDrafts();mapOpen=!mapOpen;renderPage();}));
     el('catalogue-actions').append(button(t('refreshStops'),()=>{bus.client.clearCache();if(searchQuery.trim())loadSearch(searchQuery);else if(nearbyResult)loadNearby(nearbyResult.location);else message('searchHint');},'quiet'));
-    renderStops();
-    renderMap();
+    renderStops();renderMap();renderSelectedStop();
   } else if (page === 'routes') {
-    screen.innerHTML = `<h2>${esc(i18n.officialText(routeStop.name))}</h2><div id="routes"></div>`; renderRoutes();
+    screen.innerHTML = `<div id="back-stops"></div><h2>${esc(i18n.officialText(routeStop.name))}</h2><div id="route-navigation"></div><div id="route-stop-details"></div><div id="routes"></div>`;
+    el('back-stops').append(button(t('backToStops'),()=>{reset();page='nearby';message();renderPage();},'quiet'));
+    el('route-navigation').append(navigationLink(routeStop));el('route-stop-details').append(stopDetails(routeStop));renderRoutes();
   } else if (page === 'settings') {
     screen.innerHTML = `<h2>${esc(t('settings'))}</h2><section class="language-settings"><h3>${esc(t('languageTitle'))}</h3></section>`;
     const languageSection = screen.querySelector('.language-settings'); languageSection.append(languageControl('settings-language'));
@@ -175,38 +209,64 @@ function renderPage() {
     }, 'primary'));
   }
 }
-function renderStops() {
-  if (!el('results')) return;
-  const stops=searchResult?.stops??nearbyResult?.stops??[];
-  el('result-summary').textContent=searchResult ? searchResult.total>stops.length?t('searchMore',{count:stops.length,total:searchResult.total}):t(searchResult.total?'searchCount':'searchEmpty',{count:searchResult.total}) : '';
-  el('results').replaceChildren(...stops.map((s,index) => button(`${index+1}. ${i18n.officialText(s.name)} · ${Number.isFinite(s.distanceMeters)?t('distance',{metres:Math.round(s.distanceMeters)})+' · ':''}${t('stopId')} ${s.id.slice(-4)}`, () => loadRoutes(s,searchResult?.routeFilter), 'choice')));
-  if(searchResult && searchResult.total>stops.length) el('results').append(button(t('moreStops'),()=>loadSearch(searchQuery,Math.min(10000,stops.length+40))));
+function resultStops(){return searchResult?.stops??nearbyResult?.stops??[];}
+function chooseStop(stop,fromMap=false){
+  focusedStopId=stop.id;
+  document.querySelectorAll('.stop-select').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.stopId===stop.id)));
+  renderSelectedStop();
+  if(!fromMap){mapInstance?.select(stop.id);el('selected-stop').scrollIntoView({block:'nearest'});}
+}
+function renderSelectedStop(){
+  const host=el('selected-stop');if(!host)return;
+  const stop=resultStops().find(s=>s.id===focusedStopId);host.hidden=!stop;if(!stop)return;
+  host.innerHTML=`<p class="eyebrow">${esc(t('selectedStop'))}</p><h3>${esc(i18n.officialText(stop.name))}</h3><p class="sub">${esc(t('navigationHint'))}</p>`;
+  host.append(navigationLink(stop),button(t('busRoutes'),()=>loadRoutes(stop,searchResult?.routeFilter),'secondary'),stopDetails(stop));
+}
+function renderStops(){
+  if(!el('results'))return;
+  const stops=resultStops();
+  el('result-summary').textContent=searchResult?searchResult.total>stops.length?t('searchMore',{count:stops.length,total:searchResult.total}):t(searchResult.total?'searchCount':'searchEmpty',{count:searchResult.total}):'';
+  el('results').replaceChildren(...stops.map((stop,index)=>{
+    const choice=button('',()=>chooseStop(stop),'choice stop-select');choice.dataset.stopId=stop.id;
+    choice.setAttribute('aria-label',`${index+1}. ${i18n.officialText(stop.name)}`);choice.setAttribute('aria-pressed',String(stop.id===focusedStopId));
+    choice.innerHTML=`<span class="stop-number" aria-hidden="true">${index+1}</span><span class="stop-copy"><strong>${esc(i18n.officialText(stop.name))}</strong><span>${esc(Number.isFinite(stop.distanceMeters)?t('distance',{metres:Math.round(stop.distanceMeters)}):t('selectStopHint'))}</span></span>`;
+    return choice;
+  }));
+  if(searchResult&&searchResult.total>stops.length)el('results').append(button(t('moreStops'),()=>loadSearch(searchQuery,Math.min(10000,stops.length+40))));
 }
 function renderMap(){
   if(!mapOpen)return;
-  el('map-section').innerHTML=`<h3>${esc(t('mapTitle'))}</h3><p class="sub">${esc(t('mapHint'))}</p>${!nearbyResult&&!searchResult?`<p class="sub">${esc(t('mapDefault'))}</p>`:''}<div id="stop-map" role="region" aria-label="${esc(t('mapTitle'))}"></div><div id="area-search"></div>`;
-  mapInstance=createStopMap(el('stop-map'),{stops:searchResult?.stops??nearbyResult?.stops??[],center:nearbyResult?.location,view:mapView,t,name:v=>i18n.officialText(v),onStop:s=>loadRoutes(s,searchResult?.routeFilter),onSearch:p=>loadNearby(p)});
+  el('map-section').innerHTML=`<h3>${esc(t('mapTitle'))}</h3><p class="sub">${esc(t('mapSelectionHint'))}</p>${!nearbyResult&&!searchResult?`<p class="sub">${esc(t('mapDefault'))}</p>`:''}<div id="stop-map" role="region" aria-label="${esc(t('mapTitle'))}"></div><div id="area-search"></div>`;
+  mapInstance=createStopMap(el('stop-map'),{stops:resultStops(),center:nearbyResult?.location,view:mapView,selectedStopId:focusedStopId,t,name:v=>i18n.officialText(v),onSelect:s=>chooseStop(s,true),onStop:s=>loadRoutes(s,searchResult?.routeFilter),onSearch:p=>loadNearby(p),navigationLink});
   el('area-search').append(button(t('mapSearch'),()=>mapInstance.search()));
 }
 async function loadSearch(query,limit=40){
   captureDrafts();searchQuery=query.trim();if(!searchQuery){message('searchHint');return;}
-  reset();const token=generation;searchResult=null;nearbyResult=null;mapView=null;renderPage();message('searchingStops');
+  reset();const token=generation;searchResult=null;nearbyResult=null;mapView=null;focusedStopId=null;renderPage();message('searchingStops');
   try{const result=await bus.client.searchStops(searchQuery,{signal:controller.signal,limit});if(token!==generation)return;searchResult=result;mapView=null;if(mapInstance){mapInstance.destroy();mapInstance=null;}message();renderPage();}catch(e){if(token===generation)fail(e);}
 }
 async function loadNearby(point) {
-  captureDrafts();reset(); const token = generation; nearbyResult = null;searchResult=null;searchQuery='';
+  captureDrafts();reset(); const token = generation; nearbyResult = null;searchResult=null;searchQuery='';focusedStopId=null;
   if(point)manualDraft={...manualDraft,latitude:point.latitude,longitude:point.longitude};
   renderPage(); message(point ? 'searchingManual' : 'searchingDevice');
   try {
     const result = await bus.getNearbyStops({point, signal:controller.signal}); if (token !== generation) return;
-    nearbyResult = result;
+    nearbyResult = result;manualDraft.otherOpen=false;manualDraft.open=false;
     message(() => [t('nearbyFound', {count:result.stops.length, source:t(result.locationSource)}), result.location.accuracyMeters != null && t('accuracy', {metres:Math.round(result.location.accuracyMeters)})].filter(Boolean).join(' · '));
     if(mapInstance){mapInstance.destroy();mapInstance=null;}mapView=null;renderPage();
   } catch (e) { if (token === generation) fail(e); }
 }
-function renderRoutes() {
-  if (!routeResults || !el('routes')) return;
-  el('routes').replaceChildren(...routeResults.map(r => button(t('serviceOption', {route:r.route, destination:i18n.officialText(r.destination), direction:t(r.direction === 'O' ? 'outbound' : 'inbound'), service:r.serviceType, stop:r.stopSequence}), () => { selected = {...r,stopName:routeStop.name}; show('settings'); }, 'choice')));
+function renderRoutes(){
+  if(!routeResults||!el('routes'))return;
+  el('routes').replaceChildren(...routeResults.map(r=>{
+    const card=document.createElement('article');card.className='route-result';
+    const choice=button('',()=>{selected={...r,stopName:routeStop.name,stopPoint:{latitude:routeStop.latitude,longitude:routeStop.longitude}};show('settings');},'choice');
+    choice.setAttribute('aria-label',`${r.route} → ${i18n.officialText(r.destination)} · ${t(r.direction==='O'?'outbound':'inbound')}`);
+    choice.innerHTML=`<span class="route-number">${esc(r.route)}</span><span class="stop-copy"><strong>→ ${esc(i18n.officialText(r.destination))}</strong><span>${esc(t(r.direction==='O'?'outbound':'inbound'))}</span></span>`;
+    const details=document.createElement('details'),summary=document.createElement('summary'),info=document.createElement('p');
+    details.className='service-details';summary.textContent=t('serviceDetails');info.textContent=t('serviceOption',{route:r.route,destination:i18n.officialText(r.destination),direction:t(r.direction==='O'?'outbound':'inbound'),service:r.serviceType,stop:r.stopSequence});
+    details.append(summary,info);card.append(choice,details);return card;
+  }));
 }
 async function loadRoutes(stop,filter = null) {
   reset(); const token = generation; page = 'routes'; routeStop = stop; routeResults = null;routeFilter=filter;
