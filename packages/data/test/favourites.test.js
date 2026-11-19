@@ -32,3 +32,19 @@ test('quota failure and bad input are explicit', () => {
   assert.throws(() => store.save(favourite), { code: 'STORAGE_UNAVAILABLE' });
   assert.throws(() => store.save({ ...favourite, walkMinutes: -3 }), { code: 'INVALID_INPUT' });
 });
+
+test('exact stop, direction, metadata and both time plans survive reloading',()=>{
+ const storage=memory(),store=createFavouriteStore({storage});
+ const value={...favourite,stopName:{en:'Stop',tc:'站',sc:'站'},destination:{en:'Campus',tc:'校園',sc:'校园'},activePreset:'regular',timePresets:{regular:{walkMinutes:4,bufferMinutes:2},extra:{walkMinutes:8,bufferMinutes:3}}};
+ store.save(value);const saved=createFavouriteStore({storage}).load().favourites[0];
+ assert.deepEqual(saved.timePresets,value.timePresets);assert.deepEqual(saved.stopName,value.stopName);assert.equal(saved.stopId,favourite.stopId);
+ store.save({...saved,...saved.timePresets.extra,activePreset:'extra'});
+ assert.equal(store.load().favourites[0].walkMinutes,8);
+ assert.equal(store.load().favourites[0].timePresets.regular.walkMinutes,4);
+});
+test('invalid inactive plans and mismatched active times cannot corrupt saved favourites',()=>{
+ const store=createFavouriteStore({storage:memory()});store.save(favourite);
+ for(const extra of [{walkMinutes:-1,bufferMinutes:3},{walkMinutes:Infinity,bufferMinutes:3}])assert.throws(()=>store.save({...favourite,activePreset:'regular',timePresets:{regular:{walkMinutes:4,bufferMinutes:2},extra}}),{code:'INVALID_INPUT'});
+ assert.throws(()=>store.save({...favourite,activePreset:'extra',timePresets:{regular:{walkMinutes:4,bufferMinutes:2},extra:{walkMinutes:8,bufferMinutes:3}}}),{code:'INVALID_INPUT'});
+ assert.equal(store.load().favourites[0].walkMinutes,4);
+});
