@@ -77,3 +77,57 @@ test('stale and missing ETA never produce a departure countdown',async({page})=>
  await page.route('**/eta/**',r=>r.fulfill({json:{generated_timestamp:new Date().toISOString(),data:[]}}));
  await page.getByRole('button',{name:'Refresh arrivals'}).click();await expect(page.locator('#advice')).toContainText('No arrival estimate');
 });
+
+test('search without location, map selection and exact saved stop identity',async({page})=>{
+ await api(page); await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
+ await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition(){throw Error('Search must not request location');}}}));
+ await page.goto('/'); await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.getByLabel('Stop name or route number',{exact:true}).fill('竹園');
+ await page.getByRole('button',{name:'Search',exact:true}).click();
+ await expect(page.locator('#results')).toContainText('Chuk Yuen');
+ await page.getByLabel('Stop name or route number',{exact:true}).fill('1');
+ await page.getByRole('button',{name:'Search',exact:true}).click();
+ await expect(page.locator('#result-summary')).toContainText('1 stops found');
+ await page.getByRole('button',{name:'Show map',exact:true}).click();
+ await expect(page.locator('.map-note')).toContainText('stop list or search');
+ await page.getByRole('button',{name:'1. Chuk Yuen · 10B1',exact:true}).click();
+ await page.getByRole('button',{name:'View routes',exact:true}).click();
+ await page.getByRole('button',{name:/1 → Campus/}).click();
+ await page.getByRole('button',{name:'Save commute',exact:true}).click();
+ await expect(page.locator('.saved-stop')).toContainText('Chuk Yuen → Campus');
+ await page.reload();await expect(page.locator('.saved-stop')).toContainText('10B1');
+});
+test('editable time plans survive language changes, reload and quick switching',async({page})=>{
+ await api(page);await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:/Chuk Yuen ·/}).click();
+ await page.getByRole('button',{name:/1 → Campus/}).click();await page.getByLabel('Walking minutes',{exact:true}).fill('6');
+ await page.getByTestId('plan-extra').click();await page.getByLabel('Walking minutes',{exact:true}).fill('9');
+ await page.getByTestId('language-select').selectOption('ja');await expect(page.locator('#walk')).toHaveValue('9');
+ await page.getByTestId('plan-regular').click();await expect(page.locator('#walk')).toHaveValue('6');
+ await page.getByTestId('plan-extra').click();await expect(page.locator('#walk')).toHaveValue('9');
+ await page.getByTestId('language-select').selectOption('en');await page.getByRole('button',{name:'Save commute',exact:true}).click();
+ await expect(page.locator('#advice')).toContainText('too soon');
+ await page.reload();await expect(page.getByTestId('quick-extra')).toHaveAttribute('aria-pressed','true');
+ await page.getByTestId('quick-regular').click();await expect(page.locator('#advice')).toContainText('Leave in');
+ await page.getByRole('button',{name:'Settings',exact:true}).click();await expect(page.locator('#walk')).toHaveValue('6');
+ await page.getByTestId('plan-extra').click();await expect(page.locator('#walk')).toHaveValue('9');
+});
+test('absolute arrivals and recommended-bus reason reflect live estimates, then clear on failure',async({page})=>{
+ await api(page);
+ await page.addInitScript(({stop})=>localStorage.setItem('bus-o-clock.favourites.v1',JSON.stringify({version:1,favourites:[{stopId:stop,route:'1',direction:'O',serviceType:'1',stopSequence:1,label:'School',walkMinutes:4,bufferMinutes:2}]})),{stop});
+ await page.route('**/eta/**',r=>r.fulfill({json:{generated_timestamp:new Date().toISOString(),data:[2,12].map(minutes=>({route:'1',dir:'O',service_type:1,seq:1,eta:new Date(Date.now()+minutes*60000).toISOString(),data_timestamp:new Date().toISOString()}))}}));
+ await page.goto('/');await expect(page.locator('#arrivals')).toContainText(/Expected \d\d:\d\d/);
+ await expect(page.locator('#reason')).toContainText('first bus');await expect(page.locator('#reason')).toContainText('4-minute walk + 2-minute buffer');
+ await expect(page.locator('.recommended-arrival')).toHaveCount(1);
+ await page.route('**/eta/**',r=>r.abort());await page.getByRole('button',{name:'Refresh arrivals',exact:true}).click();
+ await expect(page.locator('#advice')).toContainText('Cannot load');await expect(page.locator('#why')).toBeHidden();await expect(page.locator('#arrivals p')).toHaveCount(0);
+});
+test('search and map fit all nine languages on a narrow phone',async({page})=>{
+ await api(page);await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
+ await page.setViewportSize({width:320,height:740});await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:'Show map',exact:true}).click();
+ for(const code of ['en','zh-Hant','zh-Hans','ja','ko','fr','es','de','pt']){
+  await page.getByTestId('language-select').selectOption(code);await expect(page.locator('#stop-map')).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+ }
+});
