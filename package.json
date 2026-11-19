@@ -15,7 +15,8 @@
     "@capacitor/core": "^7.0.0",
     "@capacitor/android": "^7.0.0",
     "@capacitor/geolocation": "^7.0.0",
-    "leaflet": "1.9.4"
+    "leaflet": "1.9.4",
+    "leaflet.markercluster": "1.5.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
