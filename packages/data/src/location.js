@@ -25,7 +25,7 @@ function normalisePosition(position) {
 export async function getCurrentLocation({ geolocation = globalThis.navigator?.geolocation, timeoutMs = 30_000 } = {}) {
   requireValue(Number.isFinite(timeoutMs) && timeoutMs > 0, 'Invalid location timeout.');
   if (!geolocation) throw new DataError('LOCATION_UNAVAILABLE', 'Location is not supported in this window. Open the app in your browser or enter coordinates manually.');
-  return new Promise((resolve, reject) => {
+  const request = enableHighAccuracy => new Promise((resolve, reject) => {
     // Let the browser time position acquisition. A separate wall-clock timer
     // also counts time spent reading the permission prompt and rejects too early.
     // https://www.w3.org/TR/geolocation/#timeout-member
@@ -39,8 +39,19 @@ export async function getCurrentLocation({ geolocation = globalThis.navigator?.g
         LOCATION_TIMEOUT: 'The location service did not return a position within the allowed time. Try again or enter coordinates manually.'
       };
       reject(new DataError(code, messages[code], error));
-    }, { enableHighAccuracy: true, maximumAge: 30_000, timeout: timeoutMs });
+    }, { enableHighAccuracy, maximumAge: 30_000, timeout: timeoutMs / 2 });
   });
+  try {
+    return await request(true);
+  } catch (error) {
+    // A temporary provider failure can recover on a second acquisition.
+    // Never retry a denial or substitute a public example for device location.
+    if (!['LOCATION_UNAVAILABLE', 'LOCATION_TIMEOUT'].includes(error.code)) throw error;
+    await new Promise(resolve => setTimeout(resolve, 750));
+    // Let the browser use its normal accuracy mode for this final attempt.
+    // Preserve the reported accuracy so callers can show the uncertainty.
+    return request(false);
+  }
 }
 
 // Inject @capacitor/geolocation only in the native app; no dependency for web users.
