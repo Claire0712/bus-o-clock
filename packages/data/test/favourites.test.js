@@ -48,3 +48,11 @@ test('invalid inactive plans and mismatched active times cannot corrupt saved fa
  assert.throws(()=>store.save({...favourite,activePreset:'extra',timePresets:{regular:{walkMinutes:4,bufferMinutes:2},extra:{walkMinutes:8,bufferMinutes:3}}}),{code:'INVALID_INPUT'});
  assert.equal(store.load().favourites[0].walkMinutes,4);
 });
+
+test('saved public stop coordinates persist and invalid coordinates are rejected',()=>{
+ const storage=memory(),store=createFavouriteStore({storage});
+ const stopPoint={latitude:22.345415,longitude:114.192640};store.save({...favourite,stopPoint});
+ assert.deepEqual(createFavouriteStore({storage}).load().favourites[0].stopPoint,stopPoint);
+ assert.throws(()=>store.save({...favourite,stopPoint:{latitude:200,longitude:114}}),{code:'INVALID_INPUT'});
+ assert.deepEqual(store.load().favourites[0].stopPoint,stopPoint);
+});
