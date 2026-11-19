@@ -12,7 +12,7 @@ async function api(page) {
 }
 test('select real-shaped service, save, reload, refresh failure and delete',async({page})=>{
  await api(page);await page.goto('/');await page.getByRole('button',{name:'Find a stop'}).click();
- await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:/Chuk Yuen ·/}).click();
+ await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
  await page.getByRole('button',{name:/1 → Campus/}).click();await page.getByLabel('Commute name').fill('School');await page.getByRole('button',{name:'Save commute'}).click();
  await expect(page.locator('#advice')).toContainText('Leave in');await page.reload();await expect(page.locator('#advice')).toContainText('Leave in');
  await page.route('**/eta/**',r=>r.abort());await page.getByRole('button',{name:'Refresh arrivals'}).click();await expect(page.locator('#advice')).toContainText('Cannot load');
@@ -22,7 +22,7 @@ test('select real-shaped service, save, reload, refresh failure and delete',asyn
 test('denied location displays fallback and empty manual coordinates are rejected',async({page})=>{
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
  await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();await page.getByRole('button',{name:'Use my location'}).click();await expect(page.locator('#status')).toContainText('Location access is blocked');
- await page.getByText('Choose location manually').click();await page.getByRole('button',{name:'Find stops at these coordinates'}).click();await expect(page.locator('#status')).toContainText('Enter both');
+ await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByText('Choose location manually').click();await page.getByRole('button',{name:'Find stops at these coordinates'}).click();await expect(page.locator('#status')).toContainText('Enter both');
 });
 test('all nine languages persist and fit a narrow screen', async({page}) => {
  await page.setViewportSize({width:320,height:740}); await page.goto('/');
@@ -42,8 +42,8 @@ test('switching languages keeps results, form drafts, saved labels and live coun
  await api(page); await page.goto('/');
  await page.getByTestId('language-select').selectOption('zh-Hant');
  await page.getByRole('button',{name:'附近',exact:true}).click();
- await page.getByRole('button',{name:'試用公開示例：竹園邨',exact:true}).click();
- await page.getByRole('button',{name:/竹園 ·/}).click();
+ await page.getByText('更多選站方式',{exact:true}).click();await page.getByRole('button',{name:'試用公開示例：竹園邨',exact:true}).click();
+ await page.locator('#results').getByRole('button',{name:/竹園/}).click();await page.locator('#selected-stop').getByRole('button',{name:'查看巴士路線',exact:true}).click();
  await expect(page.getByRole('button',{name:/1 → 校園/})).toBeVisible();
  await page.getByTestId('language-select').selectOption('zh-Hans');
  await page.getByRole('button',{name:/1 → 校园/}).click();
@@ -62,7 +62,7 @@ test('manual input and existing errors translate without requesting location aga
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
  await page.goto('/'); await page.getByRole('button',{name:'Nearby',exact:true}).click();
  await page.getByRole('button',{name:'Use my location',exact:true}).click();
- await page.getByText('Choose location manually',{exact:true}).click();
+ await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByText('Choose location manually',{exact:true}).click();
  await page.getByLabel('Latitude',{exact:true}).fill('22.3');
  await page.getByTestId('language-select').selectOption('ja');
  await expect(page.locator('#status')).toContainText('拒否');
@@ -90,16 +90,16 @@ test('search without location, map selection and exact saved stop identity',asyn
  await expect(page.locator('#result-summary')).toContainText('1 stops found');
  await page.getByRole('button',{name:'Show map',exact:true}).click();
  await expect(page.locator('.map-note')).toContainText('stop list or search');
- await page.getByRole('button',{name:'1. Chuk Yuen · 10B1',exact:true}).click();
- await page.getByRole('button',{name:'View routes',exact:true}).click();
+ await page.locator('#stop-map').getByRole('button',{name:'1. Chuk Yuen',exact:true}).click();
+ await page.locator('.leaflet-popup-content').getByRole('button',{name:'View bus services',exact:true}).click();
  await page.getByRole('button',{name:/1 → Campus/}).click();
  await page.getByRole('button',{name:'Save commute',exact:true}).click();
  await expect(page.locator('.saved-stop')).toContainText('Chuk Yuen → Campus');
- await page.reload();await expect(page.locator('.saved-stop')).toContainText('10B1');
+ await page.reload();await page.locator('#saved-stop-details summary').click();await expect(page.locator('#saved-stop-details')).toContainText('18492910339410B1');
 });
 test('editable time plans survive language changes, reload and quick switching',async({page})=>{
  await api(page);await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
- await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:/Chuk Yuen ·/}).click();
+ await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
  await page.getByRole('button',{name:/1 → Campus/}).click();await page.getByLabel('Walking minutes',{exact:true}).fill('6');
  await page.getByTestId('plan-extra').click();await page.getByLabel('Walking minutes',{exact:true}).fill('9');
  await page.getByTestId('language-select').selectOption('ja');await expect(page.locator('#walk')).toHaveValue('9');
@@ -125,9 +125,42 @@ test('absolute arrivals and recommended-bus reason reflect live estimates, then 
 test('search and map fit all nine languages on a narrow phone',async({page})=>{
  await api(page);await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
  await page.setViewportSize({width:320,height:740});await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
- await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:'Show map',exact:true}).click();
+ await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:'Show map',exact:true}).click();
  for(const code of ['en','zh-Hant','zh-Hans','ja','ko','fr','es','de','pt']){
   await page.getByTestId('language-select').selectOption(code);await expect(page.locator('#stop-map')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
  }
+});
+
+
+test('clustered stops expand and map/list selection stays in sync with the navigation destination',async({page})=>{
+ await api(page);await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
+ const other='1111111111111111';
+ await page.route('**/kmb/stop',r=>r.fulfill({json:{generated_timestamp:new Date().toISOString(),data:[
+  {stop,name_en:'North platform',name_tc:'北站台',name_sc:'北站台',lat:'22.345415',long:'114.192640'},
+  {stop:other,name_en:'South platform',name_tc:'南站台',name_sc:'南站台',lat:'22.345415',long:'114.192640'}
+ ]}}));
+ await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await expect(page.getByRole('button',{name:/Try public example/})).toBeHidden();
+ await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();
+ await page.getByRole('button',{name:'Show map',exact:true}).click();
+ await expect(page.locator('#stop-map').getByRole('button',{name:'2 stops; expand',exact:true})).toBeVisible();
+ await page.locator('#results').getByRole('button',{name:'2. South platform',exact:true}).click();
+ await expect(page.locator('#results').getByRole('button',{name:'2. South platform',exact:true})).toHaveAttribute('aria-pressed','true');
+ await expect(page.locator('#stop-map').getByRole('button',{name:'2. South platform',exact:true})).toHaveAttribute('aria-pressed','true');
+ const link=page.locator('.leaflet-popup-content').getByRole('link',{name:'Walk to this stop ↗',exact:true});
+ await expect(link).toBeVisible();expect(new URL(await link.getAttribute('href')).searchParams.get('destination')).toBe('22.345415,114.19264');
+ expect(new URL(await link.getAttribute('href')).searchParams.has('origin')).toBe(false);
+ await expect(page.locator('#selected-stop')).toContainText('South platform');
+ await page.getByTestId('language-select').selectOption('ja');await expect(page.locator('#selected-stop')).toContainText('South platform');
+ await expect(page.locator('#results').getByRole('button',{name:'2. South platform',exact:true})).toHaveAttribute('aria-pressed','true');
+});
+
+test('legacy commutes resolve their official stop for navigation and hide technical details by default',async({page})=>{
+ await api(page);await page.addInitScript(({stop})=>localStorage.setItem('bus-o-clock.favourites.v1',JSON.stringify({version:1,favourites:[{stopId:stop,route:'1',direction:'O',serviceType:'1',stopSequence:1,label:'Legacy',walkMinutes:4,bufferMinutes:2}]})),{stop});
+ await page.goto('/');const link=page.locator('#saved-navigation .walking-link');await expect(link).toBeVisible();
+ expect(new URL(await link.getAttribute('href')).searchParams.get('destination')).toBe('22.345415,114.19264');
+ await expect(page.locator('#saved-stop-details p')).toBeHidden();
+ await page.locator('#saved-stop-details summary').click();await expect(page.locator('#saved-stop-details p')).toContainText(stop);
+ await expect(page.locator('#advice')).toContainText('Leave in');
 });
