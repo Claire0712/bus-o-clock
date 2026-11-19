@@ -44,14 +44,14 @@ These are controlled calculation examples, not current live arrival times.”
 ## Slide 3 — Validation and honest limits
 
 - Live checks: routes **1, 1A, 2**; direction O, service type 1, sequence 1
-- **33 data tests + 3 browser integration tests passed**
+- **35 data tests + 3 browser integration tests passed**
 - No ETA / stale data / failed request → no misleading countdown
 - Report scheduled services and update timestamps
 - Limits: operator estimates, walking assumptions, device clock; physical-phone QA by the Android owner
 
 Speaker notes:
 “We checked three actual routes and retained the original responses and timestamps.
-We also ran thirty-three data tests and three browser integration tests. These
+We also ran thirty-five data tests and three browser integration tests. These
 cover calculation, persistence and important error states. If the arrival data is
 missing, stale or the request fails, the app does not keep an old countdown as if
 it were current. Arrival predictions can still change, and real-phone positioning

@@ -65,7 +65,7 @@ These results are time-specific observations, not a claim of continuous availabi
 
 Four deterministic fixtures verified the normal calculation, skipping a bus that
 is too soon, missing ETA, and an expired response. The current full suite passed
-33 data tests and three browser integration tests; the production web build also
+35 data tests and three browser integration tests; the production web build also
 passed. Browser tests use controlled API fixtures; they are distinct from the three
 live API checks. A fresh npm audit reported zero known vulnerabilities for the checked
 dependency tree. This does not prove the application has no security defects.

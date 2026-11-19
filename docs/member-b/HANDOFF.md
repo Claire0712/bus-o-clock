@@ -1,6 +1,6 @@
 # B 最终核验与交接清单
 
-核验基线：`cce5e14f4a4268bb131f76709ca66c03f432ad7c`，已包含组员最新 UI 与定位修改。
+核验基线：`48bfac6a013bfa20ac15055689a77799fe63c46c`，已包含组员最新 UI 与定位修改。
 
 ## 真实接口核验
 
@@ -11,7 +11,7 @@
 
 | 线路 | 站点 | Stop ID | 方向 / 服务 / 站序 | 香港查询时间 | 原始行 / 有效未来班次 | 状态 / 出门倒计时 |
 |---|---|---|---|---|---|---|
-| 1 | CHUK YUEN ESTATE BUS TERMINUS | 18492910339410B1 | O / 1 / 1 | 2026-11-19T14:29:45.521000+08:00 | 6 / 2 | wait / 314 秒 |
+| 1 | CHUK YUEN ESTATE BUS TERMINUS | 18492910359410B1 | O / 1 / 1 | 2026-11-19T14:29:45.521000+08:00 | 6 / 2 | wait / 314 秒 |
 | 1A | SAU MAU PING (CENTRAL) | A3ADFCDF8487ADB9 | O / 1 / 1 | 2026-11-19T14:29:45.579000+08:00 | 6 / 3 | wait / 374 秒 |
 | 2 | STAR FERRY, HARBOUR CITY | 5E2EC7476D55E0BA | O / 1 / 1 | 2026-11-19T14:29:45.650000+08:00 | 3 / 3 | wait / 554 秒 |
 
@@ -26,7 +26,7 @@
 
 ## 自动验证
 
-- 33 项数据测试通过：见 unit-tests.txt。
+- 35 项数据测试通过：见 unit-tests.txt。
 - 3 组浏览器联调测试通过：见 browser-tests.txt（模拟 API，独立于上述真实检查）。
 - Vite 生产构建通过：见 build.txt。
 - npm audit 本次返回 0 项已知漏洞：见 dependency-audit.json；依赖版本见 dependencies.json。

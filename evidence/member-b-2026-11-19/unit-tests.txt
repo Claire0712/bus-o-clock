@@ -3,214 +3,226 @@
 > node --test packages/data/test/*.test.js
 
 TAP version 13
-# (node:5235) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (node:5439) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
 # (Use `node --trace-warnings ...` to show where the warning was created)
 # Subtest: facade locates nearby stops and accepts a manual point without requesting permission
 ok 1 - facade locates nearby stops and accepts a manual point without requesting permission
   ---
-  duration_ms: 1.011542
+  duration_ms: 1.047709
   type: 'test'
   ...
 # Subtest: watcher emits loading and advice, suppresses advice on refresh failure, and recovers
 ok 2 - watcher emits loading and advice, suppresses advice on refresh failure, and recovers
   ---
-  duration_ms: 5.832334
+  duration_ms: 6.644083
   type: 'test'
   ...
 # Subtest: disposing a watcher aborts its in-flight request and ignores late results
 ok 3 - disposing a watcher aborts its in-flight request and ignores late results
   ---
-  duration_ms: 1.276458
+  duration_ms: 1.609083
   type: 'test'
   ...
 # Subtest: watcher ages advice out even while a refresh is stalled
 ok 4 - watcher ages advice out even while a refresh is stalled
   ---
-  duration_ms: 1.514
+  duration_ms: 0.864334
   type: 'test'
   ...
 # Subtest: already cancelled nearby query never requests location or catalogue
 ok 5 - already cancelled nearby query never requests location or catalogue
   ---
-  duration_ms: 0.744209
+  duration_ms: 0.447833
   type: 'test'
   ...
 # Subtest: cancel during pending location rejects promptly and ignores its late result
 ok 6 - cancel during pending location rejects promptly and ignores its late result
   ---
-  duration_ms: 1.183292
+  duration_ms: 1.451417
   type: 'test'
   ...
 # Subtest: skips a too-soon bus and calculates departure across midnight
 ok 7 - skips a too-soon bus and calculates departure across midnight
   ---
-  duration_ms: 3.817083
+  duration_ms: 2.511542
   type: 'test'
   ...
 # Subtest: filters opposite direction, service type and repeated stop sequence
 ok 8 - filters opposite direction, service type and repeated stop sequence
   ---
-  duration_ms: 0.264125
+  duration_ms: 0.331833
   type: 'test'
   ...
 # Subtest: exact departure boundary is leave-now, without negative countdown
 ok 9 - exact departure boundary is leave-now, without negative countdown
   ---
-  duration_ms: 0.198458
+  duration_ms: 0.236959
   type: 'test'
   ...
 # Subtest: all future buses too soon produces too-late, not a rush recommendation
 ok 10 - all future buses too soon produces too-late, not a rush recommendation
   ---
-  duration_ms: 0.092542
+  duration_ms: 0.2355
   type: 'test'
   ...
 # Subtest: null ETA preserves service remarks and does not invent an arrival
 ok 11 - null ETA preserves service remarks and does not invent an arrival
   ---
-  duration_ms: 0.205042
+  duration_ms: 0.248084
   type: 'test'
   ...
 # Subtest: fresh response cannot hide stale per-bus data
 ok 12 - fresh response cannot hide stale per-bus data
   ---
-  duration_ms: 0.06675
+  duration_ms: 0.072875
   type: 'test'
   ...
 # Subtest: old envelope, absent timestamps and future clock skew suppress advice
 ok 13 - old envelope, absent timestamps and future clock skew suppress advice
   ---
-  duration_ms: 0.204
+  duration_ms: 0.200875
   type: 'test'
   ...
 # Subtest: scheduled buses are explicitly labelled and duplicate ETA rows collapse
 ok 14 - scheduled buses are explicitly labelled and duplicate ETA rows collapse
   ---
-  duration_ms: 0.078083
+  duration_ms: 0.088875
   type: 'test'
   ...
 # Subtest: invalid durations and missing direction are rejected
 ok 15 - invalid durations and missing direction are rejected
   ---
-  duration_ms: 0.673959
+  duration_ms: 0.720375
   type: 'test'
   ...
 # Subtest: countdown becomes stale with time even without another network request
 ok 16 - countdown becomes stale with time even without another network request
   ---
-  duration_ms: 0.305667
+  duration_ms: 0.925875
   type: 'test'
   ...
 # Subtest: favourites survive a new store instance; saving same service updates it
 ok 17 - favourites survive a new store instance; saving same service updates it
   ---
-  duration_ms: 0.85675
+  duration_ms: 0.800333
   type: 'test'
   ...
 # Subtest: opposite directions and repeated stop sequences are separate favourites
 ok 18 - opposite directions and repeated stop sequences are separate favourites
   ---
-  duration_ms: 0.172459
+  duration_ms: 0.170208
   type: 'test'
   ...
 # Subtest: corrupt or unavailable storage is visible and never silently overwritten
 ok 19 - corrupt or unavailable storage is visible and never silently overwritten
   ---
-  duration_ms: 1.399958
+  duration_ms: 1.307667
   type: 'test'
   ...
 # Subtest: quota failure and bad input are explicit
 ok 20 - quota failure and bad input are explicit
   ---
-  duration_ms: 0.159292
+  duration_ms: 0.128959
   type: 'test'
   ...
 # Subtest: normalises and caches catalogues but never silently drops failed fetches
 ok 21 - normalises and caches catalogues but never silently drops failed fetches
   ---
-  duration_ms: 17.212417
+  duration_ms: 27.998083
   type: 'test'
   ...
 # Subtest: route-stop join retains repeated sequences and destination
 ok 22 - route-stop join retains repeated sequences and destination
   ---
-  duration_ms: 8.596833
+  duration_ms: 7.864417
   type: 'test'
   ...
 # Subtest: catalogue requests use the working collection URLs with trailing slash
 ok 23 - catalogue requests use the working collection URLs with trailing slash
   ---
-  duration_ms: 0.540417
+  duration_ms: 0.482625
   type: 'test'
   ...
 # Subtest: terminal arrivals are not offered as boardable services
 ok 24 - terminal arrivals are not offered as boardable services
   ---
-  duration_ms: 0.364834
+  duration_ms: 0.359792
   type: 'test'
   ...
 # Subtest: ETA URL uses selected service, passes signal, and is not cached
 ok 25 - ETA URL uses selected service, passes signal, and is not cached
   ---
-  duration_ms: 1.204875
+  duration_ms: 1.032459
   type: 'test'
   ...
 # Subtest: HTTP, malformed payload and abort have distinct errors
 ok 26 - HTTP, malformed payload and abort have distinct errors
   ---
-  duration_ms: 0.800625
+  duration_ms: 0.594709
   type: 'test'
   ...
 # Subtest: request timeout is bounded even when transport ignores cancellation
 ok 27 - request timeout is bounded even when transport ignores cancellation
   ---
-  duration_ms: 12.062583
+  duration_ms: 10.209875
   type: 'test'
   ...
 # Subtest: invalid stop coordinates are upstream errors and a retry can recover
 ok 28 - invalid stop coordinates are upstream errors and a retry can recover
   ---
-  duration_ms: 0.901041
+  duration_ms: 0.99125
   type: 'test'
   ...
-# (node:5239) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
+# (node:5443) ExperimentalWarning: The MockTimers API is an experimental feature and might change at any time
 # (Use `node --trace-warnings ...` to show where the warning was created)
 # Subtest: distance uses metres and nearest search honours radius and limit
 ok 29 - distance uses metres and nearest search honours radius and limit
   ---
-  duration_ms: 1.219542
+  duration_ms: 1.973083
   type: 'test'
   ...
 # Subtest: invalid coordinates are rejected rather than treated as the equator
 ok 30 - invalid coordinates are rejected rather than treated as the equator
   ---
-  duration_ms: 0.250417
+  duration_ms: 0.702
   type: 'test'
   ...
 # Subtest: browser location returns accuracy and normalises permission denial
 ok 31 - browser location returns accuracy and normalises permission denial
   ---
-  duration_ms: 0.812625
+  duration_ms: 0.350042
+  type: 'test'
+  ...
+# Subtest: waiting for browser permission does not consume the acquisition timeout
+ok 32 - waiting for browser permission does not consume the acquisition timeout
+  ---
+  duration_ms: 5.938
+  type: 'test'
+  ...
+# Subtest: browser acquisition timeout and unavailable service remain distinct errors
+ok 33 - browser acquisition timeout and unavailable service remain distinct errors
+  ---
+  duration_ms: 0.323292
   type: 'test'
   ...
 # Subtest: native adapter requests permission and preserves approximate location accuracy
-ok 32 - native adapter requests permission and preserves approximate location accuracy
+ok 34 - native adapter requests permission and preserves approximate location accuracy
   ---
-  duration_ms: 0.251333
+  duration_ms: 0.242125
   type: 'test'
   ...
 # Subtest: native position request times out even when the plugin never settles
-ok 33 - native position request times out even when the plugin never settles
+ok 35 - native position request times out even when the plugin never settles
   ---
-  duration_ms: 6.739125
+  duration_ms: 1.073209
   type: 'test'
   ...
-1..33
-# tests 33
+1..35
+# tests 35
 # suites 0
-# pass 33
+# pass 35
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 106.351791
+# duration_ms 111.27075
