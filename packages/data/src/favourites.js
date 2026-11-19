@@ -1,4 +1,4 @@
-import { DataError, requireValue, validateCommute } from './validation.js';
+import { DataError, requireValue, validateCommute, validatePoint } from './validation.js';
 export const FAVOURITES_KEY = 'bus-o-clock.favourites.v1';
 
 function browserStorage() {
@@ -9,6 +9,7 @@ function sanitise(value) {
   validateCommute(value);
   requireValue(typeof value.label === 'string' && value.label.trim().length > 0 && value.label.length <= 100, 'A label of 1 to 100 characters is required.');
   const extra = {};
+  if(value.stopPoint != null){validatePoint(value.stopPoint);extra.stopPoint={latitude:value.stopPoint.latitude,longitude:value.stopPoint.longitude};}
   if (value.timePresets != null) {
     requireValue(value.timePresets && ['regular','extra'].includes(value.activePreset), 'Invalid time plan.');
     extra.timePresets = {};
