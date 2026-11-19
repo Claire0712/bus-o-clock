@@ -1,3 +1,4 @@
+import { featureMessages } from './feature-i18n.js';
 export const LANGUAGES = [
   ['en', 'English'], ['zh-Hant', '繁體中文'], ['zh-Hans', '简体中文'],
   ['ja', '日本語'], ['ko', '한국어'], ['fr', 'Français'],
@@ -89,6 +90,7 @@ export const messages = {
   }
 };
 
+for (const [code, extra] of Object.entries(featureMessages)) Object.assign(messages[code], extra);
 function defaultStorage() { try { return globalThis.localStorage; } catch { return null; } }
 export function createI18n({ storage = defaultStorage() } = {}) {
   let language = 'en';
@@ -106,6 +108,9 @@ export function createI18n({ storage = defaultStorage() } = {}) {
     officialText(value) {
       const key = language === 'zh-Hant' ? 'tc' : language === 'zh-Hans' ? 'sc' : 'en';
       return value?.[key] || value?.en || value?.tc || value?.sc || '';
+    },
+    formatClock(value) {
+      return new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : language, {timeZone:'Asia/Hong_Kong',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(value));
     },
     formatTime(value) {
       return new Date(value).toLocaleTimeString(language === 'en' ? 'en-GB' : language, { timeZone:'Asia/Hong_Kong', hour12:false });
