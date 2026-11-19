@@ -4,5 +4,6 @@
   "webDir": "dist",
   "android": {
     "adjustMarginsForEdgeToEdge": "auto"
-  }
+  },
+  "appendUserAgent": "BusOClock/1.0 (+https://github.com/Claire0712/bus-o-clock)"
 }
