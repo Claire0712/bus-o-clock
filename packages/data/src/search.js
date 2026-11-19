@@ -5,7 +5,7 @@ export function isRouteQuery(value) { return /^(?=.*\d)[A-Z0-9]{1,12}$/.test(nor
 
 export function searchStopCatalogue(stops, query, { associations = [], limit = 40 } = {}) {
   const q = normaliseQuery(query);
-  requireValue(q.length > 0 && q.length <= 100 && Number.isInteger(limit) && limit > 0 && limit <= 100, 'Invalid stop search.');
+  requireValue(q.length > 0 && q.length <= 100 && Number.isInteger(limit) && limit > 0 && limit <= 10000, 'Invalid stop search.');
   const byRoute = isRouteQuery(q);
   const boardable = new Map();
   if (byRoute) {
