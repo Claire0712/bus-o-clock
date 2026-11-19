@@ -34,11 +34,45 @@ test('browser acquisition timeout and unavailable service remain distinct errors
     const providerError = { code: browserCode, message: 'Provider could not return a position' };
     await assert.rejects(getCurrentLocation({ geolocation: {
       getCurrentPosition(ok, fail, options) {
-        assert.equal(options.timeout, 30_000);
+        assert.equal(options.timeout, 15_000);
         fail(providerError);
       }
     } }), error => error.code === code && error.cause === providerError);
   }
+});
+test('temporary browser failures retry once and preserve real position accuracy', async () => {
+  for (const code of [2, 3]) {
+    const calls = [];
+    const position = { coords: { latitude: 22.3, longitude: 114.2, accuracy: 240 }, timestamp: 123 };
+    const result = await getCurrentLocation({ timeoutMs: 20_000, geolocation: {
+      getCurrentPosition(ok, fail, options) {
+        calls.push(options);
+        if (calls.length === 1) fail({ code }); else ok(position);
+      }
+    } });
+    assert.deepEqual(calls.map(c => c.enableHighAccuracy), [true, false]);
+    assert.equal(calls.reduce((sum, c) => sum + c.timeout, 0), 20_000);
+    assert.equal(result.accuracyMeters, 240);
+    assert.equal(result.timestamp, 123);
+    assert.equal(result.latitude, position.coords.latitude);
+  }
+});
+test('persistent failures are bounded and denial stops further location requests', async () => {
+  for (const codes of [[2, 2], [3, 3], [2, 1], [1]]) {
+    let calls = 0;
+    const lastCode = codes.at(-1);
+    await assert.rejects(getCurrentLocation({ geolocation: {
+      getCurrentPosition(ok, fail) { fail({ code: codes[calls++] }); }
+    } }), { code: ({1:'LOCATION_DENIED',2:'LOCATION_UNAVAILABLE',3:'LOCATION_TIMEOUT'})[lastCode] });
+    assert.equal(calls, codes.length);
+  }
+});
+test('invalid returned coordinates do not trigger a location retry', async () => {
+  let calls = 0;
+  await assert.rejects(getCurrentLocation({ geolocation: {
+    getCurrentPosition(ok) { calls++; ok({ coords: { latitude: NaN, longitude: 114.2, accuracy: 20 } }); }
+  } }), { code: 'INVALID_INPUT' });
+  assert.equal(calls, 1);
 });
 test('native adapter requests permission and preserves approximate location accuracy', async () => {
   let requested = false;
