@@ -42,12 +42,22 @@ watchers; returning to the foreground refreshes advice.
 ## Finding and saving a bus
 
 - Search official Chinese or English stop names or an exact KMB route number without giving location access. Results identify each stop; selecting a service retains its exact stop ID, direction, service type and stop sequence.
-- Open the interactive map to select numbered stops, or move the map and search around its centre. If map tiles fail, the search and stop list remain usable. The default Hong Kong view is labelled and does not claim to be your location.
+- Open the interactive map to select numbered stops, or move the map and search around its centre. Dense stops are clustered; selecting a stop highlights both its map marker and list card. If map tiles fail, the search and stop list remain usable. The default Hong Kong view is labelled and does not claim to be your location.
 - Arrival rows show both minutes remaining and the expected clock time in Hong Kong, with a next-day label after midnight. The highlighted recommended bus has a short explanation based on the walking and buffer times; stale or failed ETA requests clear the recommendation.
 - Edit and save two time plans, **Usual** and **Extra time**, for each commute. Switch between them on Home; both sets of values persist locally. Existing saved commutes remain compatible.
 - Refresh stop data from Nearby to clear the local catalogue cache and repeat the current search. Web catalogues have a 36-hour snapshot freshness limit, and ETA always comes from KMB directly. This cannot correct errors in the upstream provider's data.
 
-Map rendering uses [Leaflet](https://leafletjs.com/) and standard [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/), with visible attribution. Tiles require internet and are loaded only when the map is opened; no bulk or offline tile download is provided. Maps show stop locations, not walking routes. Walking and buffer times remain user-entered estimates.
+Map rendering uses [Leaflet](https://leafletjs.com/) with [MarkerCluster](https://github.com/Leaflet/Leaflet.markercluster) and standard [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/), with visible attribution. Tiles require internet and are loaded only when the map is opened; no bulk or offline tile download is provided. Maps show stop locations, not walking routes. Walking and buffer times remain user-entered estimates.
+
+## Walking to the selected stop
+
+The main action in a map popup is **Walk to this stop**. It opens Google Maps with the selected public stop coordinates and walking mode. **View bus services** is a separate secondary action for choosing the bus route and direction. Navigation is also available on the selected-stop card, service page and saved commute.
+
+This is an external navigation handoff, not an in-app turn-by-turn engine. Google Maps uses or asks for the starting location; Bus o'Clock sends only the destination stop, not a stored device origin. App switching, location access and walking-route availability depend on the device and map service. Google Maps walking estimates are not imported into Bus o'Clock: users still set their own walking and buffer minutes. Existing commutes without stored coordinates look up the official stop by ID before showing the navigation link.
+
+Search and device location remain the main Nearby entry points. Public examples, coordinate input and catalogue refresh are under **More ways to choose a stop**. Stop cards separate names from distance; technical IDs and service details are expandable.
+
+Interface evidence and trial materials: [UI iteration notes](docs/UI-ITERATION.md), [usability trial worksheet](docs/USABILITY-TEST.md). The worksheet is unfilled; participant testing has not yet been reported.
 
 ## Interface languages
 
@@ -61,7 +71,7 @@ Public-review research and proposed priorities: [User needs evidence](docs/USER-
 
 - `app.js`, `app.css`, `index.html`: live interface, adapted from the original prototype.
 - `i18n.js`, `feature-i18n.js`: nine interface languages, saved language preference and official-name fallback.
-- `stop-map.js`, `journey-tools.js`: interactive stop map, clock labels, explanations and time plans.
+- `stop-map.js`, `journey-tools.js`, `navigation.js`: interactive stop map, clock labels, explanations and time plans.
 - `packages/data`: KMB client, location, departure calculations, persistence and tests.
 - `android`: Capacitor native project and foreground location permissions.
 - `tests/app.spec.js`: browser integration and error-state checks.
