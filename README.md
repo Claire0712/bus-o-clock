@@ -39,9 +39,18 @@ requests foreground coarse/fine location only when the user chooses Use my locat
 App data backup is disabled; favourites remain local. Backgrounding stops live
 watchers; returning to the foreground refreshes advice.
 
+## Interface languages
+
+Choose a language in the header or Settings: English, Traditional Chinese, Simplified Chinese, Japanese, Korean, French, Spanish, German or Portuguese. The choice is stored on the current browser/device. Changing language preserves the selected stop, route, saved commutes and unsaved commute-form inputs.
+
+UI labels, validation, status messages and departure advice are translated. KMB stop names, destinations and service remarks use the official Traditional/Simplified Chinese fields for Chinese interfaces and the official English field for other interfaces. User-created commute labels remain unchanged. Translations have not yet been reviewed by native speakers of every language.
+
+Public-review research and proposed priorities: [User needs evidence](docs/USER-NEEDS-RESEARCH.md). These are exploratory secondary sources, not interviews with Bus o'Clock users.
+
 ## Source and integration
 
 - `app.js`, `app.css`, `index.html`: live interface, adapted from the original prototype.
+- `i18n.js`: nine interface languages, saved language preference and official-name fallback.
 - `packages/data`: KMB client, location, departure calculations, persistence and tests.
 - `android`: Capacitor native project and foreground location permissions.
 - `tests/app.spec.js`: browser integration and error-state checks.
@@ -52,6 +61,6 @@ Data attribution: [KMB / Long Win on DATA.GOV.HK](https://data.gov.hk/en-data/da
 Third-party data remains subject to its provider's terms. No walking-route routing,
 background notifications, multi-operator planning or account synchronisation is provided.
 
-## Member B final handoff (19 November)
+## Data integration handoff (19 November)
 
-See [B verification and handoff](docs/member-b/HANDOFF.md), [report section](docs/member-b/REPORT-SECTION.md), and [three-slide content with speaking notes](docs/member-b/PPT-CONTENT-AND-SCRIPT.md).
+See [Data verification and handoff](docs/member-b/HANDOFF.md), [report section](docs/member-b/REPORT-SECTION.md), and [three-slide content with speaking notes](docs/member-b/PPT-CONTENT-AND-SCRIPT.md).
