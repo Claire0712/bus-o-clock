@@ -1,4 +1,5 @@
 import { DataError, names, requireValue, validatePoint, validateSelection } from './validation.js';
+import { isRouteQuery, searchStopCatalogue } from './search.js';
 export const KMB_BASE_URL = 'https://data.etabus.gov.hk/v1/transport/kmb';
 const CATALOGUE_KEY = 'bus-o-clock.kmb-catalogue.v1:';
 const CATALOGUE_PATHS = ['stop', 'route/', 'route-stop/'];
@@ -135,6 +136,13 @@ export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_0
     }
   }
   return {
+    async searchStops(query, { signal, limit = 40 } = {}) {
+      const [stops, associations] = await Promise.all([
+        request('stop', { signal, catalogue:true }),
+        isRouteQuery(query) ? request('route-stop/', { signal, catalogue:true }) : Promise.resolve({data:[]})
+      ]);
+      return searchStopCatalogue(stops.data.map(normaliseStop), query, { associations:associations.data, limit });
+    },
     async getStops(options = {}) {
       const envelope = await request('stop', { ...options, catalogue: true });
       try { return envelope.data.map(normaliseStop); }
