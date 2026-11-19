@@ -67,7 +67,8 @@ export type NativeGeolocationPlugin = {
 };
 export function createCapacitorLocationProvider(plugin: NativeGeolocationPlugin): () => Promise<Location>;
 export function createKmbClient(options?: { fetchImpl?: typeof fetch; timeoutMs?: number; catalogueTtlMs?: number;
-  retries?: number; retryDelayMs?: number; storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null; now?: () => number }): KmbClient;
+  retries?: number; retryDelayMs?: number; storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null;
+  catalogueBaseUrl?: string | null; now?: () => number }): KmbClient;
 export function createFavouriteStore(options?: { storage?: StorageLike | null }): FavouriteStore;
 export function createBusOClock(options?: { client?: KmbClient; locationProvider?: () => Promise<Location>; favouriteStore?: FavouriteStore }): BusOClock;
 export function watchCommute(options: { client: KmbClient; selection: Commute; onUpdate: (state: WatchState) => void; now?: () => number }): () => void;
