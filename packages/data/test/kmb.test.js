@@ -150,6 +150,33 @@ test('ETA always uses live requests, including after reload and retries', async 
   assert.deepEqual(modes, ['no-store', 'no-store', 'no-store']);
 });
 
+test('fresh same-site official catalogues work without a cross-origin request; ETA stays live', async () => {
+  const urls = [], stamp = new Date().toISOString();
+  const client = createKmbClient({ storage: null, catalogueBaseUrl: 'https://example.test/bus/data/', fetchImpl: async url => {
+    urls.push(url);
+    return new Response(JSON.stringify(url.includes('/data/')
+      ? { snapshot_retrieved_at: stamp, generated_timestamp: stamp, data: [stop] }
+      : { generated_timestamp: stamp, data: [] }));
+  } });
+  assert.equal((await client.getStops())[0].id, stopId);
+  await client.getEta({ stopId, route: '1', serviceType: '1', direction: 'O', stopSequence: 1 });
+  assert.deepEqual(urls, ['https://example.test/bus/data/stop.json', `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stopId}/1/1`]);
+});
+
+test('missing, malformed, or expired same-site catalogues fall back to the official API', async () => {
+  for (const snapshot of [null, { data: [stop] }, { snapshot_retrieved_at: '2020-01-01', generated_timestamp: '2020-01-01', data: [stop] }]) {
+    const urls = [];
+    const client = createKmbClient({ storage: null, catalogueBaseUrl: 'https://example.test/data/', fetchImpl: async url => {
+      urls.push(url);
+      if (url.startsWith('https://example.test/')) return new Response(JSON.stringify(snapshot), { status: snapshot ? 200 : 404 });
+      return response([stop]);
+    } });
+    assert.equal((await client.getStops())[0].id, stopId);
+    assert.equal(urls.length, 2);
+    assert.ok(urls[1].startsWith('https://data.etabus.gov.hk/'));
+  }
+});
+
 test('invalid stop coordinates are upstream errors and a retry can recover', async () => {
   for (const lat of ['   ', 'not-a-number', '91']) {
     let calls = 0;
