@@ -92,8 +92,12 @@ export const messages = {
 
 for (const [code, extra] of Object.entries(featureMessages)) Object.assign(messages[code], extra);
 function defaultStorage() { try { return globalThis.localStorage; } catch { return null; } }
-export function createI18n({ storage = defaultStorage() } = {}) {
-  let language = 'en';
+export function createI18n({ storage = defaultStorage(), browserLanguages = globalThis.navigator?.languages ?? [] } = {}) {
+  const preferred = browserLanguages.map(code => {
+    if (/^zh/i.test(code)) return /Hans|CN|SG/i.test(code) ? 'zh-Hans' : 'zh-Hant';
+    return code.split('-')[0].toLowerCase();
+  }).find(code => LANGUAGES.some(([supported]) => supported === code));
+  let language = preferred ?? 'en';
   try { const saved = storage?.getItem(LANGUAGE_KEY); if (Object.hasOwn(messages, saved)) language = saved; } catch { /* Session-only language still works. */ }
   return {
     get language() { return language; },

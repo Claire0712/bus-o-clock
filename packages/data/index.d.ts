@@ -30,7 +30,13 @@ export type WatchState = Omit<Advice, 'status'> & {
   status: AdviceStatus | 'loading' | 'error'; refreshing: boolean; error?: { code: string; message: string };
 };
 export type RequestOptions = { signal?: AbortSignal };
+export type RouteSearchService = {
+  key: string; route: string; direction: 'O' | 'I'; serviceType: string;
+  origin: LocalisedText; destination: LocalisedText; stops: (Stop & { stopSequence: number })[];
+};
+export type StopSearchResult = { stops: Stop[]; total: number; routeFilter: string | null; query: string; services: RouteSearchService[] };
 export type KmbClient = {
+  searchStops(query: string, options?: RequestOptions & { limit?: number }): Promise<StopSearchResult>;
   getStops(options?: RequestOptions): Promise<Stop[]>;
   getRoutesForStop(stopId: string, options?: RequestOptions): Promise<RouteAtStop[]>;
   getEta(selection: Selection, options?: RequestOptions): Promise<EtaEnvelope>;

@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+async function switchLanguage(page,code){
+ await page.locator('nav [data-page=settings]').click();
+ await page.getByTestId('settings-language').selectOption(code);
+ await page.locator('.return-previous').click();
+}
 const stop='18492910339410B1';
 async function api(page) {
  await page.route('https://data.etabus.gov.hk/**', async route => {
@@ -27,7 +32,7 @@ test('denied location displays fallback and empty manual coordinates are rejecte
 test('all nine languages persist and fit a narrow screen', async({page}) => {
  await page.setViewportSize({width:320,height:740}); await page.goto('/');
  for (const [code, home] of [['en','Home'],['zh-Hant','首頁'],['zh-Hans','首页'],['ja','ホーム'],['ko','홈'],['fr','Accueil'],['es','Inicio'],['de','Start'],['pt','Início']]) {
-  await page.getByTestId('language-select').selectOption(code);
+  await switchLanguage(page,code);
   await expect(page.locator('html')).toHaveAttribute('lang',code);
   await expect(page.getByRole('button',{name:home,exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
@@ -35,25 +40,25 @@ test('all nine languages persist and fit a narrow screen', async({page}) => {
  await page.reload(); await expect(page.getByTestId('language-select')).toHaveValue('pt');
  await page.getByRole('button',{name:'Definições',exact:true}).click();
  await page.getByTestId('settings-language').selectOption('ko');
- await expect(page.getByTestId('language-select')).toHaveValue('ko');
+ await expect(page.getByTestId('settings-language')).toHaveValue('ko');
  await expect(page.getByRole('heading',{name:'앱 언어'})).toBeVisible();
 });
 test('switching languages keeps results, form drafts, saved labels and live countdowns', async({page}) => {
  await api(page); await page.goto('/');
- await page.getByTestId('language-select').selectOption('zh-Hant');
+ await switchLanguage(page,'zh-Hant');
  await page.getByRole('button',{name:'找車站',exact:true}).click();
  await page.getByText('更多選站方式',{exact:true}).click();await page.getByRole('button',{name:'試用公開示例：竹園邨',exact:true}).click();
  await page.locator('#results').getByRole('button',{name:/竹園/}).click();await page.locator('#selected-stop').getByRole('button',{name:'查看巴士路線',exact:true}).click();
  await expect(page.getByRole('button',{name:/1 → 校園/})).toBeVisible();
- await page.getByTestId('language-select').selectOption('zh-Hans');
+ await switchLanguage(page,'zh-Hans');
  await page.getByRole('button',{name:/1 → 校园/}).click();
  await page.getByLabel('通勤名称').fill('我的学校'); await page.getByLabel('步行时间（分钟）').fill('6');
- await page.getByTestId('language-select').selectOption('ja');
+ await switchLanguage(page,'ja');
  await expect(page.getByLabel('通勤の名前')).toHaveValue('我的学校');
  await expect(page.getByLabel('徒歩時間（分）')).toHaveValue('6');
  await page.getByRole('button',{name:'通勤を保存',exact:true}).click();
  await expect(page.locator('#advice')).toContainText('あと');
- await page.getByTestId('language-select').selectOption('ko');
+ await switchLanguage(page,'ko');
  await expect(page.locator('#advice')).toContainText('후 출발');
  await expect(page.getByRole('button',{name:'我的学校 · 1',exact:true})).toBeVisible();
  await page.reload(); await expect(page.locator('#advice')).toContainText('후 출발');
@@ -64,7 +69,7 @@ test('manual input and existing errors translate without requesting location aga
  await page.getByRole('button',{name:'Use my location',exact:true}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByText('Choose location manually',{exact:true}).click();
  await page.getByLabel('Latitude',{exact:true}).fill('22.3');
- await page.getByTestId('language-select').selectOption('ja');
+ await switchLanguage(page,'ja');
  await expect(page.locator('#status')).toContainText('拒否');
  await expect(page.getByLabel('緯度',{exact:true})).toHaveValue('22.3');
  await expect(page.getByLabel('緯度',{exact:true})).toBeVisible();
@@ -87,7 +92,8 @@ test('search without location, map selection and exact saved stop identity',asyn
  await expect(page.locator('#results')).toContainText('Chuk Yuen');
  await page.getByLabel('Stop name or route number',{exact:true}).fill('1');
  await page.getByRole('button',{name:'Search',exact:true}).click();
- await expect(page.locator('#result-summary')).toContainText('1 stops found');
+ await page.locator('#service-choices button').click();
+ await expect(page.locator('#result-summary')).toContainText('travel order');
  await page.getByRole('button',{name:'Show map',exact:true}).click();
  await expect(page.locator('.map-note')).toContainText('stop list or search');
  await page.locator('#stop-map').getByRole('button',{name:'1. Chuk Yuen',exact:true}).click();
@@ -101,11 +107,11 @@ test('editable time plans survive language changes, reload and quick switching',
  await api(page);await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
  await page.getByRole('button',{name:/1 → Campus/}).click();await page.getByLabel('Walking minutes',{exact:true}).fill('6');
- await page.getByTestId('plan-extra').click();await page.getByLabel('Walking minutes',{exact:true}).fill('9');
- await page.getByTestId('language-select').selectOption('ja');await expect(page.locator('#walk')).toHaveValue('9');
+ await page.locator('#optional-plans summary').click();await page.getByTestId('plan-extra').click();await page.getByLabel('Walking minutes',{exact:true}).fill('9');
+ await switchLanguage(page,'ja');await expect(page.locator('#walk')).toHaveValue('9');
  await page.getByTestId('plan-regular').click();await expect(page.locator('#walk')).toHaveValue('6');
  await page.getByTestId('plan-extra').click();await expect(page.locator('#walk')).toHaveValue('9');
- await page.getByTestId('language-select').selectOption('en');await page.getByRole('button',{name:'Save commute',exact:true}).click();
+ await switchLanguage(page,'en');await page.getByRole('button',{name:'Save commute',exact:true}).click();
  await expect(page.locator('#advice')).toContainText('too soon');
  await page.reload();await expect(page.getByTestId('quick-extra')).toHaveAttribute('aria-pressed','true');
  await page.getByTestId('quick-regular').click();await expect(page.locator('#advice')).toContainText('Leave in');
@@ -127,7 +133,7 @@ test('search and map fit all nine languages on a narrow phone',async({page})=>{
  await page.setViewportSize({width:320,height:740});await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:'Show map',exact:true}).click();
  for(const code of ['en','zh-Hant','zh-Hans','ja','ko','fr','es','de','pt']){
-  await page.getByTestId('language-select').selectOption(code);await expect(page.locator('#stop-map')).toBeVisible();
+  await switchLanguage(page,code);await expect(page.locator('#stop-map')).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
  }
 });
@@ -153,7 +159,7 @@ test('clustered stops expand and map/list selection stays in sync with the navig
  await expect(page.locator('#walking-map')).toBeVisible();await expect(page.locator('#screen')).toContainText('South platform');
  await page.getByRole('button',{name:'Back',exact:true}).click();
  await expect(page.locator('#selected-stop')).toContainText('South platform');
- await page.getByTestId('language-select').selectOption('ja');await expect(page.locator('#selected-stop')).toContainText('South platform');
+ await switchLanguage(page,'ja');await expect(page.locator('#selected-stop')).toContainText('South platform');
  await expect(page.locator('#results').getByRole('button',{name:/^\d+\. South platform$/})).toHaveAttribute('aria-pressed','true');
 });
 
@@ -189,7 +195,7 @@ test('device walking route stays in the app and survives nine-language re-render
  await expect(page.locator('.walking-route-line')).toHaveCount(1);await expect(page.locator('#walking-origin')).toContainText('22.34110');
  await page.setViewportSize({width:320,height:740});
  for(const code of ['en','zh-Hant','zh-Hans','ja','ko','fr','es','de','pt']){
-  await page.getByTestId('language-select').selectOption(code);await expect(page.locator('.walking-route-line')).toHaveCount(1);
+  await switchLanguage(page,code);await expect(page.locator('.walking-route-line')).toHaveCount(1);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
  }
  expect(calls).toBe(1);expect(context.pages()).toHaveLength(1);
@@ -247,4 +253,55 @@ test('first visit explains the flow; each navigation destination has a distinct 
  await page.getByRole('button',{name:'Settings',exact:true}).click();await expect(page.locator('#walk')).toHaveCount(0);
  await page.getByRole('button',{name:'Home',exact:true}).click();await page.reload();
  await expect(page.locator('.welcome')).toHaveCount(0);await expect(page.locator('#advice')).toContainText('Leave in');
+});
+
+test('review improvements remove duplicate language and explain manual timing',async({page})=>{
+ await api(page);await page.goto('/');
+ await expect(page.locator('[data-language-picker]:visible')).toHaveCount(1);
+ await page.locator('nav [data-page=settings]').click();
+ await expect(page.locator('[data-language-picker]:visible')).toHaveCount(1);
+ await page.locator('nav [data-page=nearby]').click();
+ await expect(page.locator('[data-language-picker]:visible')).toHaveCount(0);
+ await page.locator('#stop-query').fill('1');await page.getByRole('button',{name:'Search',exact:true}).click();
+ await expect(page.locator('#service-choices')).toContainText('Campus');
+ await expect(page.locator('#results .stop-card')).toHaveCount(0);
+ await page.locator('#service-choices button').click();
+ await page.locator('#results').getByRole('button',{name:'Choose this stop →',exact:true}).click();
+ await expect(page.locator('#walk')).toBeVisible();
+ await page.getByRole('button',{name:'Back to stops',exact:true}).click();
+ await expect(page.locator('#results .stop-card')).toHaveCount(1);
+ await page.getByRole('button',{name:'Choose this stop →',exact:true}).click();
+ await expect(page.getByTestId('plan-extra')).toBeHidden();
+ await expect(page.locator('#timing-example')).toContainText('4 minutes');
+ await page.locator('#walk').fill('9');await expect(page.locator('#timing-example')).toContainText('later bus');
+});
+test('direction-first search saves the selected direction and exact boarding sequence',async({page})=>{
+ await api(page);
+ const other='1111111111111111';
+ await page.route('**/kmb/stop',r=>r.fulfill({json:{data:[
+  {stop,name_en:'Same name',lat:22.3,long:114.1},
+  {stop:other,name_en:'Same name',lat:22.31,long:114.11}
+ ]}}));
+ await page.route('**/kmb/route/',r=>r.fulfill({json:{data:[
+  {route:'1',bound:'O',service_type:'1',dest_en:'Campus'},
+  {route:'1',bound:'I',service_type:'1',dest_en:'Harbour'}
+ ]}}));
+ await page.route('**/kmb/route-stop/',r=>r.fulfill({json:{data:[
+  {route:'1',bound:'O',service_type:'1',seq:1,stop},
+  {route:'1',bound:'O',service_type:'1',seq:2,stop:other},
+  {route:'1',bound:'I',service_type:'1',seq:1,stop:other},
+  {route:'1',bound:'I',service_type:'1',seq:2,stop}
+ ]}}));
+ await page.goto('/');await page.locator('nav [data-page=nearby]').click();
+ await page.locator('#stop-query').fill('1');await page.getByRole('button',{name:'Search',exact:true}).click();
+ await expect(page.locator('#service-choices button')).toHaveCount(2);
+ await page.getByRole('button',{name:/1 → Harbour/}).click();
+ await expect(page.locator('#results .stop-card')).toHaveCount(1);
+ await page.getByRole('button',{name:'Change direction',exact:true}).click();
+ await page.getByRole('button',{name:/1 → Campus/}).click();
+ await page.getByRole('button',{name:'Choose this stop →',exact:true}).click();
+ await page.getByRole('button',{name:'Save commute',exact:true}).click();
+ await expect(page.locator('#advice')).toContainText('Leave in');
+ const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('bus-o-clock.favourites.v1')).favourites[0]);
+ expect(saved).toMatchObject({stopId:stop,route:'1',direction:'O',serviceType:'1',stopSequence:1});
 });

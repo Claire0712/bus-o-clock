@@ -137,11 +137,12 @@ export function createKmbClient({ fetchImpl = globalThis.fetch, timeoutMs = 10_0
   }
   return {
     async searchStops(query, { signal, limit = 40 } = {}) {
-      const [stops, associations] = await Promise.all([
+      const [stops, associations, routes] = await Promise.all([
         request('stop', { signal, catalogue:true }),
-        isRouteQuery(query) ? request('route-stop/', { signal, catalogue:true }) : Promise.resolve({data:[]})
+        isRouteQuery(query) ? request('route-stop/', { signal, catalogue:true }) : Promise.resolve({data:[]}),
+        isRouteQuery(query) ? request('route/', { signal, catalogue:true }) : Promise.resolve({data:[]})
       ]);
-      return searchStopCatalogue(stops.data.map(normaliseStop), query, { associations:associations.data, limit });
+      return searchStopCatalogue(stops.data.map(normaliseStop), query, { associations:associations.data, routes:routes.data, limit });
     },
     async getStops(options = {}) {
       const envelope = await request('stop', { ...options, catalogue: true });

@@ -37,3 +37,10 @@ test('official names use available Chinese fields and English for other language
     assert.equal(i18n.officialText(null), '');
   }
 });
+test('browser language initializes first visit but never overrides saved choice',()=>{
+ const storage={getItem:()=>null,setItem(){}};
+ assert.equal(createI18n({storage,browserLanguages:['zh-HK','en']}).language,'zh-Hant');
+ assert.equal(createI18n({storage,browserLanguages:['zh-CN']}).language,'zh-Hans');
+ assert.equal(createI18n({storage,browserLanguages:['it','fr-CA']}).language,'fr');
+ assert.equal(createI18n({storage:{getItem:()=> 'en'},browserLanguages:['zh-HK']}).language,'en');
+});

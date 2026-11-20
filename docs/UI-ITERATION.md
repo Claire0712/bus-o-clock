@@ -37,3 +37,13 @@ The walking path is now drawn inside the app using the FOSSGIS OSRM walking serv
 - [FOSSGIS routing service and usage policy](https://routing.openstreetmap.de/about.html)
 - [OSRM Route API](https://project-osrm.org/docs/v5.24.0/api/#route-service)
 - [Leaflet MarkerCluster](https://github.com/Leaflet/Leaflet.markercluster)
+
+## 20 November: review follow-up
+
+- Language selection is visible on the first-use welcome page and in Settings only. Settings offers a return action preserving the interrupted form or map; saved preferences take priority over browser language.
+- Route-number searches first show direction/service choices, then boarding stops in sequence. Repeated stops retain their sequence and terminal-only entries are excluded. Stop-name and nearby searches remain available.
+- Stop cards offer a direct boarding action. A route-search choice already identifies the full service and can proceed directly to Timing.
+- Optional time plans are collapsed on first setup. Inputs explicitly state that walking/buffer times are user estimates, with a clearly hypothetical, dynamically calculated ten-minute arrival example.
+- Header and setup spacing are reduced. New copy covers all nine supported interface languages.
+
+Verification: 71 unit tests and 18 browser tests (mocked deterministic APIs), including service identity, backwards navigation, language changes, draft/preset persistence and existing map/walking features. Manual browser inspection also used live route 1A data. This is developer verification, not a completed participant usability study or physical Android validation.

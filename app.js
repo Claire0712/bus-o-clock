@@ -21,7 +21,8 @@ let nearbyResult, routeStop, routeResults, lastAdvice, formDraft, manualDraft = 
 let searchQuery = '', searchResult, routeFilter = null, mapOpen = false, mapInstance, mapView, planDraft;
 let notice = () => '', preferenceNotSaved = false;
 let focusedStopId = null;
-let editingCommute = false;
+let setupFromSearch = false;
+let editingCommute = false, searchService = null, plansOpen = false, settingsReturn = null;
 current = bus.favourites.load().favourites[0];
 
 function message(key = '', values) {
@@ -71,7 +72,7 @@ async function savedNavigation(host,value) {
 }
 function languageControl(id) {
   const root = document.createElement('div'); root.className = 'language-control';
-  const label = document.createElement('label'); label.htmlFor = id; label.textContent = t('language');
+  const label = document.createElement('label'); label.htmlFor = id; label.textContent = i18n.language==='en'?'Language':`${t('language')} / Language`;
   const select = document.createElement('select'); select.id = id; select.dataset.languagePicker = ''; select.dataset.testid = id;
   for (const [code, name] of LANGUAGES) {
     const option = document.createElement('option'); option.value = code; option.lang = code; option.textContent = name; select.append(option);
@@ -88,7 +89,7 @@ function renderGlobal() {
     b.setAttribute('aria-label', t(b.dataset.page)); b.querySelector('span').textContent = t(b.dataset.page);
   });
   document.querySelectorAll('[data-language-picker]').forEach(select => {
-    select.value = i18n.language; document.querySelector(`label[for="${select.id}"]`).textContent = t('language');
+    select.value = i18n.language; document.querySelector(`label[for="${select.id}"]`).textContent = i18n.language==='en'?'Language':`${t('language')} / Language`;
   });
   el('language-status').textContent = preferenceNotSaved ? t('languageSession') : '';
   status.textContent = notice();
@@ -144,8 +145,13 @@ function updateNavigation() {
   });
 }
 function show(next) {
+  if (next === 'settings') {
+    if (page !== 'settings') { captureDrafts(); settingsReturn = page; stopWatch(); }
+    page = 'settings'; renderPage(); return;
+  }
+  settingsReturn = null;
   reset();walkingJourney?.dispose();walkingJourney=null; page = next; message(); formDraft = null; planDraft = null; lastAdvice = null;
-  if (next === 'nearby') { nearbyResult = null; searchResult = null; searchQuery = ''; manualDraft = {}; mapView = null; focusedStopId = null; }
+  if (next === 'nearby') { searchService = null; nearbyResult = null; searchResult = null; searchQuery = ''; manualDraft = {}; mapView = null; focusedStopId = null; }
   window.scrollTo(0, 0); renderPage();
   if (['home','details'].includes(page)) startAdvice();
 }
@@ -156,12 +162,13 @@ function welcomeSteps() {
   return `<ol class="welcome-steps">${[['stepStops','welcomeStop'],['stepService','welcomeRoute'],['stepTimes','welcomeTime']].map(([title,copy],i)=>`<li><span aria-hidden="true">${i+1}</span><div><strong>${esc(t(title))}</strong><p>${esc(t(copy))}</p></div></li>`).join('')}</ol>`;
 }
 function resumeStops() { reset(); page='nearby'; message(); window.scrollTo(0,0); renderPage(); }
-function openSetup(value,edit=false) { selected=value; editingCommute=edit; show('setup'); }
+function openSetup(value,edit=false,fromSearch=false) { setupFromSearch=fromSearch; plansOpen=edit || value.activePreset==='extra'; selected=value; editingCommute=edit; show('setup'); }
 function renderPage() {
   walkingJourney?.unmount();
   document.querySelector('.app-footer').textContent=t(page==='walking'?'walkFooter':'footer');
   if(mapInstance) { mapView = mapInstance.view(); mapInstance.destroy(); mapInstance = null; }
   updateNavigation();
+  document.querySelector('header .language-control').hidden = !(page === 'home' && !current);
   if(page==='walking'){walkingJourney.render(screen,{t,name:v=>i18n.officialText(v)||t('selectedStop'),back:walkingJourney.back});return;}
   if (page === 'home' || page === 'details') {
     const loaded = bus.favourites.load();
@@ -208,19 +215,28 @@ function renderPage() {
     el('route-navigation').append(navigationLink(routeStop,'secondary'));el('route-stop-details').append(stopDetails(routeStop));renderRoutes();
   } else if (page === 'settings') {
     screen.innerHTML = `<h2>${esc(t('settings'))}</h2><p class="page-intro">${esc(t('settingsIntro'))}</p><section class="settings-card language-settings"><h3>${esc(t('languageTitle'))}</h3></section><section class="settings-card"><h3>${esc(t('settingsDataTitle'))}</h3><p class="sub">${esc(t('settingsDataText'))}</p></section><details class="settings-help"><summary>${esc(t('settingsHelp'))}</summary>${welcomeSteps()}<p class="sub">${esc(t('settingsCommuteHint'))}</p></details>`;
+    if(settingsReturn) screen.prepend(button(t('returnPrevious'),()=>{page=settingsReturn;settingsReturn=null;renderPage();startAdvice();},'quiet return-previous'));
     const languageSection = screen.querySelector('.language-settings'); languageSection.append(languageControl('settings-language'));
     for (const key of ['languageHelp','officialNames']) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = t(key); languageSection.append(p); }
   } else if (page === 'setup') {
     const value = selected;
     if (!value) { show('home'); return; }
     screen.innerHTML = `${editingCommute?'':setupProgress(3)}<div id="back-setup"></div><h2>${esc(t(editingCommute?'edit':'timingTitle'))}</h2><p class="page-intro">${esc(t('timingHelp'))}</p><section class="selection-summary"><strong>${esc(t('route',{route:value.route}))} → ${esc(i18n.officialText(value.destination)||t(value.direction==='O'?'outbound':'inbound'))}</strong><p>${esc(i18n.officialText(value.stopName))}</p></section>`;
-    el('back-setup').append(button(t(editingCommute?'backHome':'backToRoutes'),()=>{if(editingCommute){selected=null;show('home');}else{reset();page='routes';message();window.scrollTo(0,0);renderPage();}},'quiet'));
+    el('back-setup').append(button(t(editingCommute?'backHome':setupFromSearch?'backToStops':'backToRoutes'),()=>{if(editingCommute){selected=null;show('home');}else if(setupFromSearch){resumeStops();}else{reset();page='routes';message();window.scrollTo(0,0);renderPage();}},'quiet'));
     if(!planDraft)planDraft={active:value.activePreset??'regular',plans:timePlans(value)};
     const activeTimes=planDraft.plans[planDraft.active];
     screen.insertAdjacentHTML('beforeend', `<label for="label">${esc(t('commuteName'))}</label><input id="label" maxlength="100" value="${esc(formDraft?.label ?? value.label ?? t('myCommute'))}">`);
-    screen.insertAdjacentHTML('beforeend',`<h3>${esc(t('plansTitle'))}</h3><div id="edit-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('plansHelp'))}</p>`);
+    screen.insertAdjacentHTML('beforeend',`<details id="optional-plans" ${plansOpen?'open':''}><summary>${esc(t('optionalPlans'))}</summary><div id="edit-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('plansHelp'))}</p></details>`);
+    el('optional-plans').ontoggle=()=>{plansOpen=el('optional-plans').open;};
     for(const id of PLAN_IDS){const choice=button(t(id),()=>{captureDrafts();planDraft.active=id;formDraft={...formDraft,walk:planDraft.plans[id].walkMinutes,buffer:planDraft.plans[id].bufferMinutes};renderPage();});choice.setAttribute('aria-pressed',String(planDraft.active===id));choice.dataset.testid='plan-'+id;el('edit-plans').append(choice);}
     screen.insertAdjacentHTML('beforeend', `<div class="time-fields"><div><label for="walk">${esc(t('walkMinutes'))}</label><input id="walk" type="number" min="0" max="180" step="any" value="${esc(formDraft?.walk ?? activeTimes.walkMinutes)}"></div><div><label for="buffer">${esc(t('bufferMinutes'))}</label><input id="buffer" type="number" min="0" max="180" step="any" value="${esc(formDraft?.buffer ?? activeTimes.bufferMinutes)}"></div></div>`);
+    screen.insertAdjacentHTML('beforeend',`<p class="sub manual-times">${esc(t('manualTimes'))}</p><p id="timing-example" class="reason-card" aria-live="polite"></p>`);
+    const updateExample=()=>{
+      const walk=Number(el('walk').value), buffer=Number(el('buffer').value);
+      el('timing-example').textContent=el('walk').value!==''&&el('buffer').value!==''&&[walk,buffer].every(v=>Number.isFinite(v)&&v>=0&&v<=180)
+        ? t(walk+buffer>10?'timingLater':'timingExample',{walk,buffer,leave:Number((10-walk-buffer).toFixed(2))}) : t('validTimes');
+    };
+    el('walk').oninput=updateExample;el('buffer').oninput=updateExample;updateExample();
     screen.append(button(t('save'), () => {
       if (!el('walk').value || !el('buffer').value) { message('enterTimes'); return; }
       const walkMinutes = Number(el('walk').value), bufferMinutes = Number(el('buffer').value), label = el('label').value.trim();
@@ -233,7 +249,11 @@ function renderPage() {
     }, 'primary save-commute'));
   }
 }
-function resultStops(){return searchResult?.stops??nearbyResult?.stops??[];}
+function resultStops(){return searchResult?.routeFilter ? searchService?.stops??[] : searchResult?.stops??nearbyResult?.stops??[];}
+function boardStop(stop){
+  if(searchService)openSetup({stopId:stop.id,route:searchService.route,direction:searchService.direction,serviceType:searchService.serviceType,stopSequence:stop.stopSequence,origin:searchService.origin,destination:searchService.destination,stopName:stop.name,stopPoint:{latitude:stop.latitude,longitude:stop.longitude}},false,true);
+  else loadRoutes(stop,searchResult?.routeFilter);
+}
 function chooseStop(stop,fromMap=false){
   focusedStopId=stop.id;
   document.querySelectorAll('.stop-select').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.stopId===stop.id)));
@@ -249,14 +269,32 @@ function renderSelectedStop(){
 function renderStops(){
   if(!el('results'))return;
   const stops=resultStops();
-  el('result-summary').textContent=searchResult?searchResult.total>stops.length?t('searchMore',{count:stops.length,total:searchResult.total}):t(searchResult.total?'searchCount':'searchEmpty',{count:searchResult.total}):'';
+  if(searchResult?.routeFilter){
+    el('result-summary').textContent=t(searchService?'routeOrder':'chooseDirection');
+    if(!searchService){
+      el('results').innerHTML='<div id="service-choices"></div>';
+      for(const service of searchResult.services){
+        el('service-choices').append(button(`${service.route} → ${i18n.officialText(service.destination)||t(service.direction==='O'?'outbound':'inbound')} · ${t('serviceVariant',{service:service.serviceType})}`,()=>{searchService=service;focusedStopId=null;renderPage();},'choice'));
+      }
+      if(!searchResult.services.length)el('result-summary').textContent=t('searchEmpty');
+      return;
+    }
+  }
+  if(!searchResult?.routeFilter)el('result-summary').textContent=searchResult?searchResult.total>stops.length?t('searchMore',{count:stops.length,total:searchResult.total}):t(searchResult.total?'searchCount':'searchEmpty',{count:searchResult.total}):'';
   el('results').replaceChildren(...stops.map((stop,index)=>{
     const choice=button('',()=>chooseStop(stop),'choice stop-select');choice.dataset.stopId=stop.id;
     choice.setAttribute('aria-label',`${index+1}. ${i18n.officialText(stop.name)}`);choice.setAttribute('aria-pressed',String(stop.id===focusedStopId));
     choice.innerHTML=`<span class="stop-number" aria-hidden="true">${index+1}</span><span class="stop-copy"><strong>${esc(i18n.officialText(stop.name))}</strong><span>${esc(Number.isFinite(stop.distanceMeters)?t('distance',{metres:Math.round(stop.distanceMeters)}):t('selectStopHint'))}</span></span>`;
-    return choice;
+    const card=document.createElement('article');card.className='stop-card';
+    if(searchService)choice.querySelector('.stop-number').textContent=stop.stopSequence;
+    card.append(choice,button(t('chooseBoarding'),()=>boardStop(stop),'quiet board-stop'));
+    return card;
   }));
-  if(searchResult&&searchResult.total>stops.length)el('results').append(button(t('moreStops'),()=>loadSearch(searchQuery,Math.min(10000,stops.length+40))));
+  if(searchService){
+    const heading=document.createElement('p');heading.className='selection-summary';heading.textContent=`${searchService.route} → ${i18n.officialText(searchService.destination)||t(searchService.direction==='O'?'outbound':'inbound')} · ${t('serviceVariant',{service:searchService.serviceType})}`;
+    el('results').prepend(heading,button(t('changeDirection'),()=>{searchService=null;focusedStopId=null;renderPage();},'quiet'));
+  }
+  if(!searchService&&searchResult&&searchResult.total>stops.length)el('results').append(button(t('moreStops'),()=>loadSearch(searchQuery,Math.min(10000,stops.length+40))));
 }
 function renderMap(){
   if(!mapOpen)return;
@@ -266,11 +304,11 @@ function renderMap(){
 }
 async function loadSearch(query,limit=40){
   captureDrafts();searchQuery=query.trim();if(!searchQuery){message('searchHint');return;}
-  reset();const token=generation;searchResult=null;nearbyResult=null;mapView=null;focusedStopId=null;renderPage();message('searchingStops');
+  reset();const token=generation;searchService=null;searchResult=null;nearbyResult=null;mapView=null;focusedStopId=null;renderPage();message('searchingStops');
   try{const result=await bus.client.searchStops(searchQuery,{signal:controller.signal,limit});if(token!==generation)return;searchResult=result;mapView=null;if(mapInstance){mapInstance.destroy();mapInstance=null;}message();renderPage();}catch(e){if(token===generation)fail(e);}
 }
 async function loadNearby(point) {
-  captureDrafts();reset(); const token = generation; nearbyResult = null;searchResult=null;searchQuery='';focusedStopId=null;
+  captureDrafts();reset(); const token = generation; nearbyResult = null;searchService=null;searchResult=null;searchQuery='';focusedStopId=null;
   if(point)manualDraft={...manualDraft,latitude:point.latitude,longitude:point.longitude};
   renderPage(); message(point ? 'searchingManual' : 'searchingDevice');
   try {
@@ -296,12 +334,12 @@ async function loadRoutes(stop,filter = null) {
   reset(); const token = generation; page = 'routes'; routeStop = stop; routeResults = null;routeFilter=filter;
   window.scrollTo(0,0); renderPage(); message('loadingRoutes');
   try { const routes = await bus.getRoutesForStop(stop.id, {signal:controller.signal}); if (token !== generation) return;
-    routeResults = routeFilter?routes.filter(r=>r.route===routeFilter):routes; message(routeResults.length ? '' : 'noRoutes'); renderRoutes();
+    routeResults = routeFilter?routes.filter(r=>r.route===routeFilter && (!searchService || (r.direction===searchService.direction && r.serviceType===searchService.serviceType))):routes; message(routeResults.length ? '' : 'noRoutes'); renderRoutes();
   } catch (e) { if (token === generation) fail(e); }
 }
 document.querySelector('header').append(languageControl('language-select'));
 const languageStatus = document.createElement('p'); languageStatus.id = 'language-status'; languageStatus.setAttribute('role', 'status'); document.querySelector('header').append(languageStatus);
-document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => { selected = null; show(b.dataset.page); });
+document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => { if(b.dataset.page!=='settings')selected=null; show(b.dataset.page); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); else startAdvice(); });
 window.addEventListener('pagehide', reset);
 renderGlobal(); show('home');
