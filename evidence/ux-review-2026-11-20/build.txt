@@ -1,0 +1,14 @@
+
+> bus-o-clock-app@0.1.0 build:web
+> vite build --base=/bus-o-clock/
+
+vite v6.4.5 building for production...
+transforming...
+✓ 33 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   2.11 kB │ gzip:   0.90 kB
+dist/assets/index-bYVadwfL.css   33.02 kB │ gzip:  10.47 kB
+dist/assets/web-CalFbSTk.js       0.90 kB │ gzip:   0.47 kB
+dist/assets/index-R0muAlNd.js   324.52 kB │ gzip: 103.56 kB
+✓ built in 583ms
