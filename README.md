@@ -87,3 +87,7 @@ Third-party data remains subject to its provider's terms. No live turn-by-turn g
 ## Data integration handoff (19 November)
 
 See [Data verification and handoff](docs/member-b/HANDOFF.md), [report section](docs/member-b/REPORT-SECTION.md), and [three-slide content with speaking notes](docs/member-b/PPT-CONTENT-AND-SCRIPT.md).
+
+## First use and navigation
+
+First-time users start from a welcome screen and choose **Set up my commute**. A three-step flow guides them through **Stop → Route → Timing**, then returns to Home with departure advice. **Home** is for saved commutes and countdowns; **Find stops** is for search, maps and choosing services; **Settings** contains language and app information. Commute timing is edited from Home, on its own screen. Back actions preserve the stop search and never save unfinished timing changes.
