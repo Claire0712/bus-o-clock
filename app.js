@@ -21,6 +21,7 @@ let nearbyResult, routeStop, routeResults, lastAdvice, formDraft, manualDraft = 
 let searchQuery = '', searchResult, routeFilter = null, mapOpen = false, mapInstance, mapView, planDraft;
 let notice = () => '', preferenceNotSaved = false;
 let focusedStopId = null;
+let editingCommute = false;
 current = bus.favourites.load().favourites[0];
 
 function message(key = '', values) {
@@ -99,7 +100,7 @@ function changeLanguage(language) {
   renderGlobal(); renderPage();
 }
 function captureDrafts() {
-  if (page === 'settings' && el('label')) {
+  if (page === 'setup' && el('label')) {
     formDraft = { label:el('label').value, walk:el('walk').value, buffer:el('buffer').value };
     if (planDraft) planDraft.plans[planDraft.active] = {walkMinutes:formDraft.walk,bufferMinutes:formDraft.buffer};
   }
@@ -136,7 +137,7 @@ function startAdvice() {
   stopWatch = bus.watchCommute(current, state => { lastAdvice = state; renderAdvice(state); });
 }
 function updateNavigation() {
-  const activePage = page === 'walking' ? 'nearby' : page === 'details' ? 'home' : page === 'routes' ? 'nearby' : page;
+  const activePage = page === 'walking' ? 'nearby' : page === 'details' ? 'home' : page === 'routes' ? 'nearby' : page === 'setup' ? (editingCommute ? 'home' : 'nearby') : page;
   document.querySelectorAll('[data-page]').forEach(b => {
     const active = b.dataset.page === activePage; b.classList.toggle('active', active);
     if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
@@ -148,6 +149,14 @@ function show(next) {
   window.scrollTo(0, 0); renderPage();
   if (['home','details'].includes(page)) startAdvice();
 }
+function setupProgress(step) {
+  return `<ol class="setup-progress" aria-label="${esc(t('flowLabel'))}">${['stepStops','stepService','stepTimes'].map((key,index)=>`<li class="${index+1===step?'current':index+1<step?'complete':''}" ${index+1===step?'aria-current="step"':''}><span aria-hidden="true">${index+1<step?'✓':index+1}</span>${esc(t(key))}</li>`).join('')}</ol>`;
+}
+function welcomeSteps() {
+  return `<ol class="welcome-steps">${[['stepStops','welcomeStop'],['stepService','welcomeRoute'],['stepTimes','welcomeTime']].map(([title,copy],i)=>`<li><span aria-hidden="true">${i+1}</span><div><strong>${esc(t(title))}</strong><p>${esc(t(copy))}</p></div></li>`).join('')}</ol>`;
+}
+function resumeStops() { reset(); page='nearby'; message(); window.scrollTo(0,0); renderPage(); }
+function openSetup(value,edit=false) { selected=value; editingCommute=edit; show('setup'); }
 function renderPage() {
   walkingJourney?.unmount();
   document.querySelector('.app-footer').textContent=t(page==='walking'?'walkFooter':'footer');
@@ -157,13 +166,13 @@ function renderPage() {
   if (page === 'home' || page === 'details') {
     const loaded = bus.favourites.load();
     if (loaded.status !== 'ok') message('storageError');
-    screen.innerHTML = `<h2>${esc(t('yourCommute'))}</h2><div id="saved"></div>`;
-    for (const f of loaded.favourites) el('saved').append(button(`${f.label} · ${f.route}`, () => { current = f; show('home'); }, 'choice'));
     if (!current) {
-      const empty = document.createElement('section'); empty.className = 'empty-state';
-      empty.innerHTML = `<span class="empty-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><h3>${esc(t('emptyTitle'))}</h3><p>${esc(t('emptyText'))}</p>`;
-      empty.append(button(t('findStop'), () => show('nearby'), 'primary')); screen.append(empty); return;
+      screen.innerHTML = `<section class="welcome" aria-labelledby="welcome-title"><div class="welcome-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h2 id="welcome-title">${esc(t('welcomeTitle'))}</h2><p class="welcome-intro">${esc(t('welcomeIntro'))}</p><div id="welcome-action"></div><p class="welcome-note">${esc(t('welcomeNote'))}</p>${welcomeSteps()}</section>`;
+      el('welcome-action').append(button(t('startSetup'),()=>show('nearby'),'primary')); return;
     }
+    screen.innerHTML = `<div class="section-heading"><div><h2>${esc(t('yourCommute'))}</h2><p class="page-intro">${esc(t('homeIntro'))}</p></div><div id="add-commute"></div></div><div id="saved" role="group" aria-label="${esc(t('yourCommute'))}"></div>`;
+    el('add-commute').append(button(t('addCommute'),()=>{selected=null;show('nearby');},'secondary'));
+    for (const f of loaded.favourites) { const choice=button(`${f.label} · ${f.route}`, () => { current = f; show('home'); }, 'choice'); choice.setAttribute('aria-pressed',String(f.id===current.id));el('saved').append(choice); }
     screen.insertAdjacentHTML('beforeend', `<p class="saved-stop">${esc(i18n.officialText(current.stopName))} ${esc(current.destination ? '→ '+i18n.officialText(current.destination) : t(current.direction === 'O' ? 'outbound' : 'inbound'))}</p><div id="saved-stop-details"></div><div class="card hero"><span>${esc(t('commuteRoute', {label:current.label, route:current.route}))}</span><div id="advice" class="big"></div></div><div id="quick-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('walkBuffer', {walk:current.walkMinutes, buffer:current.bufferMinutes}))}</p><p id="freshness" class="sub"></p><div id="arrivals"></div><section id="why" class="reason-card" hidden><h3>${esc(t('whyTitle'))}</h3><p id="reason"></p></section><p class="sub">${esc(t('adviceEstimate'))}</p><p id="remarks" class="sub"></p><div id="saved-navigation"></div>`);
     el('saved-stop-details').append(stopDetails(current));savedNavigation(el('saved-navigation'),current);
     const plans = timePlans(current);
@@ -171,12 +180,12 @@ function renderPage() {
       const choice = button(t(id),()=>{ try {current=bus.favourites.save({...current,...plans[id],timePresets:plans,activePreset:id});show('home');} catch(e){fail(e);} });
       choice.setAttribute('aria-pressed',String((current.activePreset??'regular')===id)); choice.dataset.testid='quick-'+id;el('quick-plans').append(choice);
     }
-    screen.append(button(t('refresh'), startAdvice), button(t('edit'), () => show('settings')), button(t('delete'), () => {
+    screen.append(button(t('refresh'), startAdvice), button(t('edit'), () => openSetup(current,true)), button(t('delete'), () => {
       try { bus.favourites.remove(current.id); current = bus.favourites.load().favourites[0]; show('home'); } catch (e) { fail(e); }
     }, 'quiet'));
     renderAdvice(lastAdvice);
   } else if (page === 'nearby') {
-    screen.innerHTML = `<h2>${esc(t('chooseStop'))}</h2><p class="page-intro">${esc(t('nearbyIntro'))}</p>
+    screen.innerHTML = `${setupProgress(1)}<h2>${esc(t('chooseStop'))}</h2><p class="page-intro">${esc(t('nearbyIntro'))}</p>
       <form id="stop-search" class="search-form"><label for="stop-query">${esc(t('searchLabel'))}</label><div class="search-row"><input id="stop-query" type="search" maxlength="100" placeholder="${esc(t('searchPlaceholder'))}" value="${esc(searchQuery)}"><button class="btn primary" type="submit">${esc(t('searchGo'))}</button></div><p class="sub">${esc(t('searchHint'))}</p></form>
       <div class="nearby-actions"><div id="locationActions"></div><div id="map-actions"></div></div>
       <details id="other-options" class="other-options"><summary>${esc(t('otherOptions'))}</summary><div id="example"></div><details id="manual-location"><summary>${esc(t('manualLocation'))}</summary><label for="latitude">${esc(t('latitude'))}</label><input id="latitude" type="number" step="any" min="-90" max="90"><label for="longitude">${esc(t('longitude'))}</label><input id="longitude" type="number" step="any" min="-180" max="180"><div id="manual"></div></details><div id="catalogue-actions"></div></details>
@@ -194,22 +203,24 @@ function renderPage() {
     el('catalogue-actions').append(button(t('refreshStops'),()=>{bus.client.clearCache();if(searchQuery.trim())loadSearch(searchQuery);else if(nearbyResult)loadNearby(nearbyResult.location);else message('searchHint');},'quiet'));
     renderStops();renderMap();renderSelectedStop();
   } else if (page === 'routes') {
-    screen.innerHTML = `<div id="back-stops"></div><h2>${esc(i18n.officialText(routeStop.name))}</h2><div id="route-navigation"></div><div id="route-stop-details"></div><div id="routes"></div>`;
-    el('back-stops').append(button(t('backToStops'),()=>{reset();page='nearby';message();renderPage();},'quiet'));
-    el('route-navigation').append(navigationLink(routeStop));el('route-stop-details').append(stopDetails(routeStop));renderRoutes();
+    screen.innerHTML = `${setupProgress(2)}<div id="back-stops"></div><h2>${esc(t('chooseRoute'))}</h2><p class="selection-summary">${esc(i18n.officialText(routeStop.name))}</p><div id="routes"></div><div id="route-stop-details"></div><div id="route-navigation"></div>`;
+    el('back-stops').append(button(t('backToStops'),resumeStops,'quiet'));
+    el('route-navigation').append(navigationLink(routeStop,'secondary'));el('route-stop-details').append(stopDetails(routeStop));renderRoutes();
   } else if (page === 'settings') {
-    screen.innerHTML = `<h2>${esc(t('settings'))}</h2><section class="language-settings"><h3>${esc(t('languageTitle'))}</h3></section>`;
+    screen.innerHTML = `<h2>${esc(t('settings'))}</h2><p class="page-intro">${esc(t('settingsIntro'))}</p><section class="settings-card language-settings"><h3>${esc(t('languageTitle'))}</h3></section><section class="settings-card"><h3>${esc(t('settingsDataTitle'))}</h3><p class="sub">${esc(t('settingsDataText'))}</p></section><details class="settings-help"><summary>${esc(t('settingsHelp'))}</summary>${welcomeSteps()}<p class="sub">${esc(t('settingsCommuteHint'))}</p></details>`;
     const languageSection = screen.querySelector('.language-settings'); languageSection.append(languageControl('settings-language'));
     for (const key of ['languageHelp','officialNames']) { const p = document.createElement('p'); p.className = 'sub'; p.textContent = t(key); languageSection.append(p); }
-    const value = selected || current;
-    if (!value) {
-      const p = document.createElement('p'); p.textContent = t('selectService'); screen.append(p, button(t('findStop'), () => show('nearby'), 'primary')); return;
-    }
+  } else if (page === 'setup') {
+    const value = selected;
+    if (!value) { show('home'); return; }
+    screen.innerHTML = `${editingCommute?'':setupProgress(3)}<div id="back-setup"></div><h2>${esc(t(editingCommute?'edit':'timingTitle'))}</h2><p class="page-intro">${esc(t('timingHelp'))}</p><section class="selection-summary"><strong>${esc(t('route',{route:value.route}))} → ${esc(i18n.officialText(value.destination)||t(value.direction==='O'?'outbound':'inbound'))}</strong><p>${esc(i18n.officialText(value.stopName))}</p></section>`;
+    el('back-setup').append(button(t(editingCommute?'backHome':'backToRoutes'),()=>{if(editingCommute){selected=null;show('home');}else{reset();page='routes';message();window.scrollTo(0,0);renderPage();}},'quiet'));
     if(!planDraft)planDraft={active:value.activePreset??'regular',plans:timePlans(value)};
     const activeTimes=planDraft.plans[planDraft.active];
+    screen.insertAdjacentHTML('beforeend', `<label for="label">${esc(t('commuteName'))}</label><input id="label" maxlength="100" value="${esc(formDraft?.label ?? value.label ?? t('myCommute'))}">`);
     screen.insertAdjacentHTML('beforeend',`<h3>${esc(t('plansTitle'))}</h3><div id="edit-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('plansHelp'))}</p>`);
     for(const id of PLAN_IDS){const choice=button(t(id),()=>{captureDrafts();planDraft.active=id;formDraft={...formDraft,walk:planDraft.plans[id].walkMinutes,buffer:planDraft.plans[id].bufferMinutes};renderPage();});choice.setAttribute('aria-pressed',String(planDraft.active===id));choice.dataset.testid='plan-'+id;el('edit-plans').append(choice);}
-    screen.insertAdjacentHTML('beforeend', `<h3>${esc(t('makeCommute'))}</h3><p>${esc(t('route', {route:value.route}))} · ${esc(i18n.officialText(value.destination) || t(value.direction === 'O' ? 'outbound' : 'inbound'))}</p><label for="label">${esc(t('commuteName'))}</label><input id="label" maxlength="100" value="${esc(formDraft?.label ?? value.label ?? t('myCommute'))}"><label for="walk">${esc(t('walkMinutes'))}</label><input id="walk" type="number" min="0" max="180" step="any" value="${esc(formDraft?.walk ?? activeTimes.walkMinutes)}"><label for="buffer">${esc(t('bufferMinutes'))}</label><input id="buffer" type="number" min="0" max="180" step="any" value="${esc(formDraft?.buffer ?? activeTimes.bufferMinutes)}">`);
+    screen.insertAdjacentHTML('beforeend', `<div class="time-fields"><div><label for="walk">${esc(t('walkMinutes'))}</label><input id="walk" type="number" min="0" max="180" step="any" value="${esc(formDraft?.walk ?? activeTimes.walkMinutes)}"></div><div><label for="buffer">${esc(t('bufferMinutes'))}</label><input id="buffer" type="number" min="0" max="180" step="any" value="${esc(formDraft?.buffer ?? activeTimes.bufferMinutes)}"></div></div>`);
     screen.append(button(t('save'), () => {
       if (!el('walk').value || !el('buffer').value) { message('enterTimes'); return; }
       const walkMinutes = Number(el('walk').value), bufferMinutes = Number(el('buffer').value), label = el('label').value.trim();
@@ -218,8 +229,8 @@ function renderPage() {
       captureDrafts();
       const plans=Object.fromEntries(PLAN_IDS.map(id=>[id,{walkMinutes:Number(planDraft.plans[id].walkMinutes),bufferMinutes:Number(planDraft.plans[id].bufferMinutes)}]));
       if(PLAN_IDS.some(id=>Object.values(planDraft.plans[id]).some(v=>v==='')) || !Object.values(plans).every(p=>Object.values(p).every(n=>Number.isFinite(n)&&n>=0&&n<=180))){message('validTimes');return;}
-      try { current = bus.favourites.save({...value, label, walkMinutes, bufferMinutes,timePresets:plans,activePreset:planDraft.active}); selected = null; show('home'); } catch (e) { fail(e); }
-    }, 'primary'));
+      try { current = bus.favourites.save({...value, label, walkMinutes, bufferMinutes,timePresets:plans,activePreset:planDraft.active}); selected = null; show('home'); message('commuteSaved'); } catch (e) { fail(e); }
+    }, 'primary save-commute'));
   }
 }
 function resultStops(){return searchResult?.stops??nearbyResult?.stops??[];}
@@ -232,8 +243,8 @@ function chooseStop(stop,fromMap=false){
 function renderSelectedStop(){
   const host=el('selected-stop');if(!host)return;
   const stop=resultStops().find(s=>s.id===focusedStopId);host.hidden=!stop;if(!stop)return;
-  host.innerHTML=`<p class="eyebrow">${esc(t('selectedStop'))}</p><h3>${esc(i18n.officialText(stop.name))}</h3><p class="sub">${esc(t('navigationHint'))}</p>`;
-  host.append(navigationLink(stop),button(t('busRoutes'),()=>loadRoutes(stop,searchResult?.routeFilter),'secondary'),stopDetails(stop));
+  host.innerHTML=`<p class="eyebrow">${esc(t('selectedStop'))}</p><h3>${esc(i18n.officialText(stop.name))}</h3><p class="sub">${esc(t('chooseRoute'))}</p>`;
+  host.append(button(t('busRoutes'),()=>loadRoutes(stop,searchResult?.routeFilter),'primary'),navigationLink(stop,'secondary'),stopDetails(stop));
 }
 function renderStops(){
   if(!el('results'))return;
@@ -273,7 +284,7 @@ function renderRoutes(){
   if(!routeResults||!el('routes'))return;
   el('routes').replaceChildren(...routeResults.map(r=>{
     const card=document.createElement('article');card.className='route-result';
-    const choice=button('',()=>{selected={...r,stopName:routeStop.name,stopPoint:{latitude:routeStop.latitude,longitude:routeStop.longitude}};show('settings');},'choice');
+    const choice=button('',()=>openSetup({...r,stopName:routeStop.name,stopPoint:{latitude:routeStop.latitude,longitude:routeStop.longitude}}),'choice');
     choice.setAttribute('aria-label',`${r.route} → ${i18n.officialText(r.destination)} · ${t(r.direction==='O'?'outbound':'inbound')}`);
     choice.innerHTML=`<span class="route-number">${esc(r.route)}</span><span class="stop-copy"><strong>→ ${esc(i18n.officialText(r.destination))}</strong><span>${esc(t(r.direction==='O'?'outbound':'inbound'))}</span></span>`;
     const details=document.createElement('details'),summary=document.createElement('summary'),info=document.createElement('p');
@@ -283,9 +294,9 @@ function renderRoutes(){
 }
 async function loadRoutes(stop,filter = null) {
   reset(); const token = generation; page = 'routes'; routeStop = stop; routeResults = null;routeFilter=filter;
-  renderPage(); message('loadingRoutes');
+  window.scrollTo(0,0); renderPage(); message('loadingRoutes');
   try { const routes = await bus.getRoutesForStop(stop.id, {signal:controller.signal}); if (token !== generation) return;
-    routeResults = routeFilter?routes.filter(r=>r.route===routeFilter):routes; message(routeResults.length ? 'chooseRoute' : 'noRoutes'); renderRoutes();
+    routeResults = routeFilter?routes.filter(r=>r.route===routeFilter):routes; message(routeResults.length ? '' : 'noRoutes'); renderRoutes();
   } catch (e) { if (token === generation) fail(e); }
 }
 document.querySelector('header').append(languageControl('language-select'));
