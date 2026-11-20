@@ -11,17 +11,17 @@ async function api(page) {
  });
 }
 test('select real-shaped service, save, reload, refresh failure and delete',async({page})=>{
- await api(page);await page.goto('/');await page.getByRole('button',{name:'Find a stop'}).click();
+ await api(page);await page.goto('/');await page.getByRole('button',{name:'Set up my commute'}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
  await page.getByRole('button',{name:/1 → Campus/}).click();await page.getByLabel('Commute name').fill('School');await page.getByRole('button',{name:'Save commute'}).click();
  await expect(page.locator('#advice')).toContainText('Leave in');await page.reload();await expect(page.locator('#advice')).toContainText('Leave in');
  await page.route('**/eta/**',r=>r.abort());await page.getByRole('button',{name:'Refresh arrivals'}).click();await expect(page.locator('#advice')).toContainText('Cannot load');
- await page.getByRole('button',{name:'Delete commute'}).click();await expect(page.getByRole('button',{name:'Find a stop'})).toBeVisible();
+ await page.getByRole('button',{name:'Delete commute'}).click();await expect(page.getByRole('button',{name:'Set up my commute'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
 test('denied location displays fallback and empty manual coordinates are rejected',async({page})=>{
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
- await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();await page.getByRole('button',{name:'Use my location'}).click();await expect(page.locator('#status')).toContainText('Location access is blocked');
+ await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();await page.getByRole('button',{name:'Use my location'}).click();await expect(page.locator('#status')).toContainText('Location access is blocked');
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByText('Choose location manually').click();await page.getByRole('button',{name:'Find stops at these coordinates'}).click();await expect(page.locator('#status')).toContainText('Enter both');
 });
 test('all nine languages persist and fit a narrow screen', async({page}) => {
@@ -41,7 +41,7 @@ test('all nine languages persist and fit a narrow screen', async({page}) => {
 test('switching languages keeps results, form drafts, saved labels and live countdowns', async({page}) => {
  await api(page); await page.goto('/');
  await page.getByTestId('language-select').selectOption('zh-Hant');
- await page.getByRole('button',{name:'附近',exact:true}).click();
+ await page.getByRole('button',{name:'找車站',exact:true}).click();
  await page.getByText('更多選站方式',{exact:true}).click();await page.getByRole('button',{name:'試用公開示例：竹園邨',exact:true}).click();
  await page.locator('#results').getByRole('button',{name:/竹園/}).click();await page.locator('#selected-stop').getByRole('button',{name:'查看巴士路線',exact:true}).click();
  await expect(page.getByRole('button',{name:/1 → 校園/})).toBeVisible();
@@ -60,7 +60,7 @@ test('switching languages keeps results, form drafts, saved labels and live coun
 });
 test('manual input and existing errors translate without requesting location again', async({page}) => {
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
- await page.goto('/'); await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.goto('/'); await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await page.getByRole('button',{name:'Use my location',exact:true}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByText('Choose location manually',{exact:true}).click();
  await page.getByLabel('Latitude',{exact:true}).fill('22.3');
@@ -81,7 +81,7 @@ test('stale and missing ETA never produce a departure countdown',async({page})=>
 test('search without location, map selection and exact saved stop identity',async({page})=>{
  await api(page); await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition(){throw Error('Search must not request location');}}}));
- await page.goto('/'); await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.goto('/'); await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await page.getByLabel('Stop name or route number',{exact:true}).fill('竹園');
  await page.getByRole('button',{name:'Search',exact:true}).click();
  await expect(page.locator('#results')).toContainText('Chuk Yuen');
@@ -98,7 +98,7 @@ test('search without location, map selection and exact saved stop identity',asyn
  await page.reload();await page.locator('#saved-stop-details summary').click();await expect(page.locator('#saved-stop-details')).toContainText('18492910339410B1');
 });
 test('editable time plans survive language changes, reload and quick switching',async({page})=>{
- await api(page);await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await api(page);await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
  await page.getByRole('button',{name:/1 → Campus/}).click();await page.getByLabel('Walking minutes',{exact:true}).fill('6');
  await page.getByTestId('plan-extra').click();await page.getByLabel('Walking minutes',{exact:true}).fill('9');
@@ -109,7 +109,7 @@ test('editable time plans survive language changes, reload and quick switching',
  await expect(page.locator('#advice')).toContainText('too soon');
  await page.reload();await expect(page.getByTestId('quick-extra')).toHaveAttribute('aria-pressed','true');
  await page.getByTestId('quick-regular').click();await expect(page.locator('#advice')).toContainText('Leave in');
- await page.getByRole('button',{name:'Settings',exact:true}).click();await expect(page.locator('#walk')).toHaveValue('6');
+ await page.getByRole('button',{name:'Edit commute',exact:true}).click();await expect(page.locator('#walk')).toHaveValue('6');
  await page.getByTestId('plan-extra').click();await expect(page.locator('#walk')).toHaveValue('9');
 });
 test('absolute arrivals and recommended-bus reason reflect live estimates, then clear on failure',async({page})=>{
@@ -124,7 +124,7 @@ test('absolute arrivals and recommended-bus reason reflect live estimates, then 
 });
 test('search and map fit all nine languages on a narrow phone',async({page})=>{
  await api(page);await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
- await page.setViewportSize({width:320,height:740});await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.setViewportSize({width:320,height:740});await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.getByRole('button',{name:'Show map',exact:true}).click();
  for(const code of ['en','zh-Hant','zh-Hans','ja','ko','fr','es','de','pt']){
   await page.getByTestId('language-select').selectOption(code);await expect(page.locator('#stop-map')).toBeVisible();
@@ -140,7 +140,7 @@ test('clustered stops expand and map/list selection stays in sync with the navig
   {stop,name_en:'North platform',name_tc:'北站台',name_sc:'北站台',lat:'22.345415',long:'114.192640'},
   {stop:other,name_en:'South platform',name_tc:'南站台',name_sc:'南站台',lat:'22.345415',long:'114.192640'}
  ]}}));
- await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await expect(page.getByRole('button',{name:/Try public example/})).toBeHidden();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();
  await page.getByRole('button',{name:'Show map',exact:true}).click();
@@ -171,7 +171,7 @@ const walkingPattern='https://routing.openstreetmap.de/routed-foot/**';
 const walkingResponse={code:'Ok',routes:[{distance:863.2,duration:690.5,geometry:{type:'LineString',coordinates:[[114.1931,22.3411],[114.193,22.344],[114.19264,22.345415]]}}],waypoints:[{distance:0,location:[114.1931,22.3411]},{distance:0,location:[114.19264,22.345415]}]};
 async function openWalking(page){
  await api(page);await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
- await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();
  await page.getByLabel('Stop name or route number',{exact:true}).fill('Chuk Yuen');await page.getByRole('button',{name:'Search',exact:true}).click();
  await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();
  await page.locator('#selected-stop').getByRole('button',{name:'Walk to this stop',exact:true}).click();
@@ -211,4 +211,40 @@ test('leaving the route screen ignores a late response and preserves the selecte
  await page.getByRole('button',{name:'Back',exact:true}).click();release();
  await expect(page.locator('#walking-map')).toHaveCount(0);await expect(page.locator('#selected-stop')).toContainText('Chuk Yuen');
  await expect(page.locator('.walking-route-line')).toHaveCount(0);
+});
+
+test('first visit explains the flow; each navigation destination has a distinct job',async({page})=>{
+ await api(page);await page.goto('/');
+ await expect(page.getByRole('heading',{name:'When should I head out?',exact:true})).toBeVisible();
+ await expect(page.locator('.welcome-steps li')).toHaveCount(3);
+ await expect(page.locator('#screen .btn.primary')).toHaveCount(1);
+ await page.getByRole('button',{name:'Settings',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'App language',exact:true})).toBeVisible();
+ await expect(page.locator('#walk')).toHaveCount(0);
+ await expect(page.locator('#stop-query')).toHaveCount(0);
+ await page.getByRole('button',{name:'Home',exact:true}).click();
+ await page.getByRole('button',{name:'Set up my commute',exact:true}).click();
+ await expect(page.locator('.setup-progress [aria-current=step]')).toHaveText('1Stop');
+ await page.getByLabel('Stop name or route number',{exact:true}).fill('Chuk');await page.getByRole('button',{name:'Search',exact:true}).click();
+ await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
+ await expect(page.locator('.setup-progress [aria-current=step]')).toHaveText('2Route');
+ await page.getByRole('button',{name:/1 → Campus/}).click();
+ await expect(page.locator('.setup-progress [aria-current=step]')).toHaveText('3Timing');
+ await expect(page.locator('nav [data-page=nearby]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('#settings-language')).toHaveCount(0);
+ await page.getByRole('button',{name:'Back to routes',exact:true}).click();
+ await expect(page.getByRole('button',{name:/1 → Campus/})).toBeVisible();
+ await page.getByRole('button',{name:'Back to stops',exact:true}).click();
+ await expect(page.locator('#stop-query')).toHaveValue('Chuk');
+ await expect(page.locator('#selected-stop')).toBeVisible();
+ await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();await page.getByRole('button',{name:/1 → Campus/}).click();
+ await page.getByLabel('Commute name').fill('Morning');await page.getByRole('button',{name:'Save commute',exact:true}).click();
+ await expect(page.locator('nav [data-page=home]')).toHaveAttribute('aria-current','page');
+ await expect(page.locator('#advice')).toContainText('Leave in');
+ await page.getByRole('button',{name:'Edit commute',exact:true}).click();await page.getByLabel('Walking minutes',{exact:true}).fill('99');
+ await page.getByRole('button',{name:'Back to Home',exact:true}).click();
+ await page.getByRole('button',{name:'Edit commute',exact:true}).click();await expect(page.locator('#walk')).toHaveValue('4');
+ await page.getByRole('button',{name:'Settings',exact:true}).click();await expect(page.locator('#walk')).toHaveCount(0);
+ await page.getByRole('button',{name:'Home',exact:true}).click();await page.reload();
+ await expect(page.locator('.welcome')).toHaveCount(0);await expect(page.locator('#advice')).toContainText('Leave in');
 });
