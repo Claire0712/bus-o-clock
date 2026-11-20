@@ -148,9 +148,10 @@ test('clustered stops expand and map/list selection stays in sync with the navig
  await page.locator('#results').getByRole('button',{name:/^\d+\. South platform$/}).click();
  await expect(page.locator('#results').getByRole('button',{name:/^\d+\. South platform$/})).toHaveAttribute('aria-pressed','true');
  await expect(page.locator('#stop-map').getByRole('button',{name:/^\d+\. South platform$/})).toHaveAttribute('aria-pressed','true');
- const link=page.locator('.leaflet-popup-content').getByRole('link',{name:'Walk to this stop ↗',exact:true});
- await expect(link).toBeVisible();expect(new URL(await link.getAttribute('href')).searchParams.get('destination')).toBe('22.345415,114.19264');
- expect(new URL(await link.getAttribute('href')).searchParams.has('origin')).toBe(false);
+ const link=page.locator('.leaflet-popup-content').getByRole('button',{name:'Walk to this stop',exact:true});
+ await expect(link).toBeVisible();await link.click();
+ await expect(page.locator('#walking-map')).toBeVisible();await expect(page.locator('#screen')).toContainText('South platform');
+ await page.getByRole('button',{name:'Back',exact:true}).click();
  await expect(page.locator('#selected-stop')).toContainText('South platform');
  await page.getByTestId('language-select').selectOption('ja');await expect(page.locator('#selected-stop')).toContainText('South platform');
  await expect(page.locator('#results').getByRole('button',{name:/^\d+\. South platform$/})).toHaveAttribute('aria-pressed','true');
@@ -159,8 +160,55 @@ test('clustered stops expand and map/list selection stays in sync with the navig
 test('legacy commutes resolve their official stop for navigation and hide technical details by default',async({page})=>{
  await api(page);await page.addInitScript(({stop})=>localStorage.setItem('bus-o-clock.favourites.v1',JSON.stringify({version:1,favourites:[{stopId:stop,route:'1',direction:'O',serviceType:'1',stopSequence:1,label:'Legacy',walkMinutes:4,bufferMinutes:2}]})),{stop});
  await page.goto('/');const link=page.locator('#saved-navigation .walking-link');await expect(link).toBeVisible();
- expect(new URL(await link.getAttribute('href')).searchParams.get('destination')).toBe('22.345415,114.19264');
  await expect(page.locator('#saved-stop-details p')).toBeHidden();
  await page.locator('#saved-stop-details summary').click();await expect(page.locator('#saved-stop-details p')).toContainText(stop);
  await expect(page.locator('#advice')).toContainText('Leave in');
+ await link.click();await expect(page.locator('#walking-map')).toBeVisible();await expect(page.locator('#screen')).toContainText('Chuk Yuen');
+});
+
+
+const walkingPattern='https://routing.openstreetmap.de/routed-foot/**';
+const walkingResponse={code:'Ok',routes:[{distance:863.2,duration:690.5,geometry:{type:'LineString',coordinates:[[114.1931,22.3411],[114.193,22.344],[114.19264,22.345415]]}}],waypoints:[{distance:0,location:[114.1931,22.3411]},{distance:0,location:[114.19264,22.345415]}]};
+async function openWalking(page){
+ await api(page);await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
+ await page.goto('/');await page.getByRole('button',{name:'Nearby',exact:true}).click();
+ await page.getByLabel('Stop name or route number',{exact:true}).fill('Chuk Yuen');await page.getByRole('button',{name:'Search',exact:true}).click();
+ await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();
+ await page.locator('#selected-stop').getByRole('button',{name:'Walk to this stop',exact:true}).click();
+}
+async function manualWalk(page){
+ await page.locator('.walking-coordinates summary').click();
+ await page.locator('#walk-latitude').fill('22.3411');await page.locator('#walk-longitude').fill('114.1931');
+ await page.locator('.walking-coordinates').getByRole('button',{name:'Calculate walking route',exact:true}).click();
+}
+test('device walking route stays in the app and survives nine-language re-render without new routing requests',async({page,context})=>{
+ await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:22.3411,longitude:114.1931,accuracy:12});
+ let calls=0;await page.route(walkingPattern,r=>{calls++;return r.fulfill({json:walkingResponse});});
+ await openWalking(page);expect(calls).toBe(0);await page.getByTestId('walk-device').click();
+ await expect(page.locator('#walking-summary')).toContainText('12 min');await expect(page.locator('#walking-summary')).toContainText('863');
+ await expect(page.locator('.walking-route-line')).toHaveCount(1);await expect(page.locator('#walking-origin')).toContainText('22.34110');
+ await page.setViewportSize({width:320,height:740});
+ for(const code of ['en','zh-Hant','zh-Hans','ja','ko','fr','es','de','pt']){
+  await page.getByTestId('language-select').selectOption(code);await expect(page.locator('.walking-route-line')).toHaveCount(1);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+ }
+ expect(calls).toBe(1);expect(context.pages()).toHaveLength(1);
+ await expect(page.locator('a[href*="google.com/maps"]')).toHaveCount(0);
+});
+test('denied location allows a manual starting point; failed recalculation removes the previous path',async({page})=>{
+ await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
+ let calls=0;await page.route(walkingPattern,r=>{calls++;return r.fulfill({json:walkingResponse});});
+ await openWalking(page);await page.getByTestId('walk-device').click();await expect(page.locator('#walking-status')).toContainText('blocked');expect(calls).toBe(0);
+ await manualWalk(page);await expect(page.locator('#walking-summary')).toContainText('863');await expect(page.locator('#walking-origin')).toContainText('manual location');
+ await page.waitForTimeout(1150);await page.route(walkingPattern,r=>r.fulfill({json:{code:'NoRoute',routes:[]}}));
+ await page.getByTestId('walk-compute').click();await expect(page.locator('#walking-status')).toContainText('No walkable route');
+ await expect(page.locator('.walking-route-line')).toHaveCount(0);await expect(page.locator('#walking-summary')).toHaveCount(0);
+});
+test('leaving the route screen ignores a late response and preserves the selected stop',async({page})=>{
+ let release,started=false;const gate=new Promise(resolve=>release=resolve);
+ await page.route(walkingPattern,async r=>{started=true;await gate;try{await r.fulfill({json:walkingResponse});}catch{/* cancelled */}});
+ await openWalking(page);await manualWalk(page);await expect.poll(()=>started).toBe(true);
+ await page.getByRole('button',{name:'Back',exact:true}).click();release();
+ await expect(page.locator('#walking-map')).toHaveCount(0);await expect(page.locator('#selected-stop')).toContainText('Chuk Yuen');
+ await expect(page.locator('.walking-route-line')).toHaveCount(0);
 });
