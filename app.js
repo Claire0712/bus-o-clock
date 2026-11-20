@@ -1,10 +1,14 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
-import { createBusOClock, createKmbClient, createCapacitorLocationProvider } from './packages/data/src/index.js';
+import { createBusOClock, createKmbClient, createCapacitorLocationProvider, getCurrentLocation } from './packages/data/src/index.js';
 import { createI18n, LANGUAGES } from './i18n.js';
 import { PLAN_IDS, timePlans, arrivalDay, recommendationReason } from './journey-tools.js';
 import { createStopMap } from './stop-map.js';
-import { walkingDirectionsUrl } from './navigation.js';
+import { createWalkingClient } from './navigation.js';
+import { createWalkingJourney } from './walking-view.js';
+const requestWalkingRoute=createWalkingClient();
+const acquireWalkingLocation=Capacitor.isNativePlatform()?createCapacitorLocationProvider(Geolocation):getCurrentLocation;
+let walkingJourney;
 
 const bus = createBusOClock(Capacitor.isNativePlatform() ? { locationProvider: createCapacitorLocationProvider(Geolocation) }
   : { client: createKmbClient({ catalogueBaseUrl: new URL('data/', document.baseURI).href }) });
@@ -30,14 +34,19 @@ function fail(error) {
     INVALID_INPUT:'invalidInput', STORAGE_CORRUPT:'storageError', STORAGE_UNAVAILABLE:'storageError' };
   message(error.uiKey || keys[error.code] || 'unknownError');
 }
-function reset() { generation++; controller?.abort(); controller = new AbortController(); stopWatch(); stopWatch = () => {}; }
+function reset() { walkingJourney?.cancel(); generation++; controller?.abort(); controller = new AbortController(); stopWatch(); stopWatch = () => {}; }
 function button(text, action, style = 'secondary') {
   const b = document.createElement('button'); b.className = `btn ${style}`; b.textContent = text; b.onclick = action; return b;
 }
 function navigationLink(point,style='primary') {
-  const link=document.createElement('a');link.className=`btn ${style} walking-link`;
-  link.href=walkingDirectionsUrl(point);link.target=Capacitor.isNativePlatform()?'_self':'_blank';link.rel='noopener noreferrer';
-  link.textContent=t('walkToStop')+' ↗';return link;
+  const action=button(t('walkToStop'),()=>openWalking(point),style+' walking-link');
+  return action;
+}
+function openWalking(stop) {
+  const previousPage=page;reset();walkingJourney?.dispose();
+  walkingJourney=createWalkingJourney({stop,getLocation:acquireWalkingLocation,requestRoute:requestWalkingRoute});
+  walkingJourney.back=()=>{reset();walkingJourney.dispose();walkingJourney=null;page=previousPage;message();renderPage();startAdvice();};
+  page='walking';message();window.scrollTo(0,0);renderPage();
 }
 function stopDetails(stop) {
   const details=document.createElement('details');details.className='stop-details';
@@ -50,7 +59,8 @@ async function savedNavigation(host,value) {
   try {
     const point=value.stopPoint??(await bus.client.getStops({signal:controller.signal})).find(s=>s.id===value.stopId);
     if(token!==generation||!host.isConnected)return;
-    const link=navigationLink(point,'secondary'),hint=document.createElement('p');hint.className='sub';hint.textContent=t('navigationHint');
+    if(!point)throw new Error('Missing stop coordinates');
+    const link=navigationLink({...point,id:value.stopId,name:value.stopName??point.name},'secondary'),hint=document.createElement('p');hint.className='sub';hint.textContent=t('navigationHint');
     host.replaceChildren(link,hint);
   } catch(error) {
     if(token!==generation||!host.isConnected||error.code==='ABORTED')return;
@@ -126,21 +136,24 @@ function startAdvice() {
   stopWatch = bus.watchCommute(current, state => { lastAdvice = state; renderAdvice(state); });
 }
 function updateNavigation() {
-  const activePage = page === 'details' ? 'home' : page === 'routes' ? 'nearby' : page;
+  const activePage = page === 'walking' ? 'nearby' : page === 'details' ? 'home' : page === 'routes' ? 'nearby' : page;
   document.querySelectorAll('[data-page]').forEach(b => {
     const active = b.dataset.page === activePage; b.classList.toggle('active', active);
     if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
 }
 function show(next) {
-  reset(); page = next; message(); formDraft = null; planDraft = null; lastAdvice = null;
+  reset();walkingJourney?.dispose();walkingJourney=null; page = next; message(); formDraft = null; planDraft = null; lastAdvice = null;
   if (next === 'nearby') { nearbyResult = null; searchResult = null; searchQuery = ''; manualDraft = {}; mapView = null; focusedStopId = null; }
   window.scrollTo(0, 0); renderPage();
   if (['home','details'].includes(page)) startAdvice();
 }
 function renderPage() {
+  walkingJourney?.unmount();
+  document.querySelector('.app-footer').textContent=t(page==='walking'?'walkFooter':'footer');
   if(mapInstance) { mapView = mapInstance.view(); mapInstance.destroy(); mapInstance = null; }
   updateNavigation();
+  if(page==='walking'){walkingJourney.render(screen,{t,name:v=>i18n.officialText(v)||t('selectedStop'),back:walkingJourney.back});return;}
   if (page === 'home' || page === 'details') {
     const loaded = bus.favourites.load();
     if (loaded.status !== 'ok') message('storageError');
