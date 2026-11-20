@@ -47,13 +47,15 @@ watchers; returning to the foreground refreshes advice.
 - Edit and save two time plans, **Usual** and **Extra time**, for each commute. Switch between them on Home; both sets of values persist locally. Existing saved commutes remain compatible.
 - Refresh stop data from Nearby to clear the local catalogue cache and repeat the current search. Web catalogues have a 36-hour snapshot freshness limit, and ETA always comes from KMB directly. This cannot correct errors in the upstream provider's data.
 
-Map rendering uses [Leaflet](https://leafletjs.com/) with [MarkerCluster](https://github.com/Leaflet/Leaflet.markercluster) and standard [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/), with visible attribution. Tiles require internet and are loaded only when the map is opened; no bulk or offline tile download is provided. Maps show stop locations, not walking routes. Walking and buffer times remain user-entered estimates.
+Map rendering uses [Leaflet](https://leafletjs.com/) with [MarkerCluster](https://github.com/Leaflet/Leaflet.markercluster) and standard [OpenStreetMap tiles](https://operations.osmfoundation.org/policies/tiles/), with visible attribution. Tiles require internet and are loaded only when the map is opened; no bulk or offline tile download is provided. The stop-selection map and walking-route view use the same map library. Commute walking and buffer minutes remain user-entered estimates.
 
 ## Walking to the selected stop
 
-The main action in a map popup is **Walk to this stop**. It opens Google Maps with the selected public stop coordinates and walking mode. **View bus services** is a separate secondary action for choosing the bus route and direction. Navigation is also available on the selected-stop card, service page and saved commute.
+The main action in a map popup is **Walk to this stop**. It opens a route view inside Bus o’Clock. Choose **Route from my location**, or select a starting point on the map / enter coordinates, then calculate the route. The map draws the returned walking path and shows its estimated distance and time. **View bus services** stays a separate action for choosing the bus route and direction. Walking routes are also accessible from the selected-stop card, service page and saved commute.
 
-This is an external navigation handoff, not an in-app turn-by-turn engine. Google Maps uses or asks for the starting location; Bus o'Clock sends only the destination stop, not a stored device origin. App switching, location access and walking-route availability depend on the device and map service. Google Maps walking estimates are not imported into Bus o'Clock: users still set their own walking and buffer minutes. Existing commutes without stored coordinates look up the official stop by ID before showing the navigation link.
+Routing uses the public [FOSSGIS walking service](https://routing.openstreetmap.de/about.html) (`routed-foot`, OSRM with OpenStreetMap data). It is a route preview: no spoken directions, live position tracking or automatic rerouting. The app explains before calculation that the service receives the origin and destination and may log requests; Bus o’Clock does not store the starting point. Only explicit requests are made, at least 1.1 seconds apart, and language changes reuse the current route. Nearby tiles and routing are separate network services.
+
+The initial scope accepts points within 30 km straight-line distance and requires road snapping within 100 m. Missing location, disconnected roads, timeout or service failure show an error; no straight line is presented as a walking route. Roads, crossings and access may differ from map data and need real-world checking. The public routing service has no availability guarantee for this project. Existing commutes without stored stop coordinates resolve the official stop ID first. Route estimates do not silently overwrite the saved walking/buffer minutes.
 
 Search and device location remain the main Nearby entry points. Public examples, coordinate input and catalogue refresh are under **More ways to choose a stop**. Stop cards separate names from distance; technical IDs and service details are expandable.
 
@@ -71,7 +73,8 @@ Public-review research and proposed priorities: [User needs evidence](docs/USER-
 
 - `app.js`, `app.css`, `index.html`: live interface, adapted from the original prototype.
 - `i18n.js`, `feature-i18n.js`: nine interface languages, saved language preference and official-name fallback.
-- `stop-map.js`, `journey-tools.js`, `navigation.js`: interactive stop map, clock labels, explanations and time plans.
+- `stop-map.js`, `journey-tools.js`: interactive stop map, clock labels, explanations and time plans.
+- `navigation.js`, `walking-view.js`: validated walking-service requests and the in-app route view.
 - `packages/data`: KMB client, location, departure calculations, persistence and tests.
 - `android`: Capacitor native project and foreground location permissions.
 - `tests/app.spec.js`: browser integration and error-state checks.
@@ -79,8 +82,7 @@ Public-review research and proposed priorities: [User needs evidence](docs/USER-
 - `docs/APP-VERIFICATION.md`: final integrated-app verification and known limitations.
 
 Data attribution: [KMB / Long Win on DATA.GOV.HK](https://data.gov.hk/en-data/dataset/hk-td-tis_21-etakmb).
-Third-party data remains subject to its provider's terms. No walking-route routing,
-background notifications, multi-operator planning or account synchronisation is provided.
+Third-party data remains subject to its provider's terms. No live turn-by-turn guidance, background notifications, multi-operator planning or account synchronisation is provided.
 
 ## Data integration handoff (19 November)
 
