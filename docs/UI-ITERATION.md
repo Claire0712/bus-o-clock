@@ -11,6 +11,17 @@
 | Long names, distances and IDs share one line | Interface review finding | Stop names and distances use separate lines. IDs and service metadata are expandable | Readability with long names and translated text |
 | “查看路线” was expected to navigate to the stop | Explicit team clarification with a map-popup screenshot | Primary popup action is “步行导航到此站”; secondary action is “查看公交线路” | Android location permissions and whether the walking path matches real pedestrian access |
 
+## Navigation and first-use flow
+
+Team feedback: the three bottom destinations were difficult to distinguish, and first-time users could not tell where to start. Inspection confirmed that Settings combined app language with the commute-creation form, and selecting a service jumped into that settings screen.
+
+- **Home:** a first-use welcome screen with one main action, “Set up my commute”, and a short explanation of the three steps. Once a commute is saved, Home shows saved journeys and departure advice, with explicit Add and Edit actions.
+- **Find stops:** search, location and map-based stop selection. The setup progress indicator continues through Stop → Route → Timing, with explicit back actions. Choosing a route opens a dedicated timing page, not Settings.
+- **Settings:** app language, device-storage information and a short usage guide. It contains no stop search, route selection or commute-time form.
+- **Timing:** confirms the exact stop, route and direction; saves walking and buffer times; returns to departure advice. Editing an existing commute starts from Home. Returning without saving leaves the stored commute unchanged.
+
+The map popup still offers in-app walking directions. Within the list-based commute setup, “View bus services” is the primary next step. All nine languages include the new first-use and setup text. These are changes in response to team feedback; usability improvement still needs testing with first-time users.
+
 ## Suggested presentation explanation
 
 > We simplified the stop-selection flow based on feedback and interface review. Search and location are now the main entry points, while less frequent options are expandable. Crowded stops are grouped on the map, and choosing a stop highlights the matching list entry. We also separated walking directions from bus services: the main popup button opens an in-app walking-route view for that exact stop, while another button shows the available bus routes.
