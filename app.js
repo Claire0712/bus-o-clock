@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 import { createBusOClock, createKmbClient, createCapacitorLocationProvider, getCurrentLocation } from './packages/data/src/index.js';
 import { createI18n, LANGUAGES } from './i18n.js';
@@ -6,13 +6,21 @@ import { PLAN_IDS, timePlans, arrivalDay, recommendationReason } from './journey
 import { createStopMap } from './stop-map.js';
 import { createWalkingClient } from './navigation.js';
 import { createWalkingJourney } from './walking-view.js';
+import { createLocationConsent } from './location-consent.js';
 const requestWalkingRoute=createWalkingClient();
-const acquireWalkingLocation=Capacitor.isNativePlatform()?createCapacitorLocationProvider(Geolocation):getCurrentLocation;
+const AppLanguage = registerPlugin('AppLanguage');
+let nativeLanguageReady = Promise.resolve();
+const nativeLocation = createCapacitorLocationProvider(Geolocation);
+const acquireNativeLocation = async () => { await nativeLanguageReady; return nativeLocation(); };
+const acquireWalkingLocation=Capacitor.isNativePlatform()?acquireNativeLocation:getCurrentLocation;
 let walkingJourney;
 
-const bus = createBusOClock(Capacitor.isNativePlatform() ? { locationProvider: createCapacitorLocationProvider(Geolocation) }
+const bus = createBusOClock(Capacitor.isNativePlatform() ? { locationProvider: acquireNativeLocation }
   : { client: createKmbClient({ catalogueBaseUrl: new URL('data/', document.baseURI).href }) });
 const i18n = createI18n(), t = (key, values) => i18n.t(key, values);
+const confirmLocation = createLocationConsent(t);
+const lastUpdates = new Map();
+let recovery = [];
 const screen = document.querySelector('#screen'), status = document.querySelector('#status');
 const el = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -26,15 +34,31 @@ let editingCommute = false, searchService = null, plansOpen = false, settingsRet
 current = bus.favourites.load().favourites[0];
 
 function message(key = '', values) {
+  recovery = []; renderRecovery();
   notice = typeof key === 'function' ? key : () => key ? t(key, values) : '';
   status.textContent = notice();
 }
-function fail(error) {
+function fail(error, retry) {
   if (error.code === 'ABORTED') return;
   const keys = { LOCATION_DENIED:'locationDenied', LOCATION_UNAVAILABLE:'locationUnavailable', LOCATION_TIMEOUT:'locationTimeout',
     NETWORK_ERROR:'networkError', TIMEOUT:'requestTimeout', HTTP_ERROR:'networkError', INVALID_RESPONSE:'invalidResponse',
     INVALID_INPUT:'invalidInput', STORAGE_CORRUPT:'storageError', STORAGE_UNAVAILABLE:'storageError' };
   message(error.uiKey || keys[error.code] || 'unknownError');
+  if (retry) recovery.push(['retryAction', retry]);
+  if (error.code?.startsWith('LOCATION_')) recovery.unshift(['searchInstead', focusStopSearch]);
+  renderRecovery();
+}
+function renderRecovery() {
+  const host = el('recovery');
+  host.replaceChildren(...recovery.map(([key, action], index) => button(t(key), action, index ? 'secondary' : 'primary')));
+  host.hidden = !recovery.length;
+}
+function focusStopSearch() {
+  if (page !== 'nearby') show('nearby');
+  el('stop-query')?.focus(); el('stop-search')?.scrollIntoView({block:'center',behavior:'smooth'});
+}
+async function requestNearbyLocation() {
+  if (await confirmLocation()) loadNearby(); else focusStopSearch();
 }
 function reset() { walkingJourney?.cancel(); generation++; controller?.abort(); controller = new AbortController(); stopWatch(); stopWatch = () => {}; }
 function button(text, action, style = 'secondary') {
@@ -93,12 +117,22 @@ function renderGlobal() {
   });
   el('language-status').textContent = preferenceNotSaved ? t('languageSession') : '';
   status.textContent = notice();
+  renderRecovery();
 }
 function changeLanguage(language) {
   captureDrafts();
   preferenceNotSaved = !i18n.setLanguage(language);
   // Keep in-flight requests, selected services and form values intact. Only render text.
   renderGlobal(); renderPage();
+  syncNativeLanguage();
+}
+function syncNativeLanguage() {
+  if (Capacitor.getPlatform() !== 'android') return;
+  const language = i18n.language;
+  nativeLanguageReady = nativeLanguageReady.then(() => AppLanguage.setLanguage({language})).catch(error => {
+    // Keep location usable if an older installed native shell lacks this plugin.
+    console.warn('Android application language could not be updated', error);
+  });
 }
 function captureDrafts() {
   if (page === 'setup' && el('label')) {
@@ -117,10 +151,14 @@ function clockText(eta, now) {
 function renderAdvice(state) {
   const target = el('advice'); if (!target || !state) return;
   const keys = { loading:'loadingArrivals', error:'arrivalsError', stale:'stale', 'no-service':'noService', 'too-late':'tooLate' };
+  target.closest('.hero').dataset.state = state.status;
   target.textContent = state.recommended ? t(state.status === 'leave-now' ? 'leaveSoon' : 'leaveIn', {
     minutes:Math.floor(state.leaveInSeconds / 60), seconds:state.leaveInSeconds % 60
   }) : t(keys[state.status] || 'arrivalsError');
-  el('freshness').textContent = state.updatedAt ? t('updated', { time:i18n.formatTime(state.updatedAt) }) : t('noUpdate');
+  if (state.updatedAt) lastUpdates.set(current.id, state.updatedAt);
+  const lastUpdate = state.updatedAt || lastUpdates.get(current.id);
+  el('freshness').textContent = lastUpdate ? t(state.status === 'error' ? 'lastSuccessfulUpdate' : 'updated', { time:i18n.formatTime(lastUpdate) }) : t('noUpdate');
+  el('arrival-recovery').replaceChildren(...(['error','stale'].includes(state.status) ? [button(t('retryAction'), startAdvice, 'primary')] : []));
   el('arrivals').replaceChildren(...state.departures.map(d => {
     const p = document.createElement('p');
     p.textContent = [t('arrivalMinutes', {minutes:Math.ceil(d.arrivalInSeconds / 60)}), t('arrivalAt',{time:clockText(d.eta,state.evaluatedAt)}), d.scheduled && t('scheduled'), !d.catchable && t('tooSoon')].filter(Boolean).join(' · ');
@@ -169,7 +207,7 @@ function renderPage() {
   if(mapInstance) { mapView = mapInstance.view(); mapInstance.destroy(); mapInstance = null; }
   updateNavigation();
   document.querySelector('header .language-control').hidden = !(page === 'home' && !current);
-  if(page==='walking'){walkingJourney.render(screen,{t,name:v=>i18n.officialText(v)||t('selectedStop'),back:walkingJourney.back});return;}
+  if(page==='walking'){walkingJourney.render(screen,{t,name:v=>i18n.officialText(v)||t('selectedStop'),back:walkingJourney.back,confirmLocation});return;}
   if (page === 'home' || page === 'details') {
     const loaded = bus.favourites.load();
     if (loaded.status !== 'ok') message('storageError');
@@ -180,7 +218,7 @@ function renderPage() {
     screen.innerHTML = `<div class="section-heading"><div><h2>${esc(t('yourCommute'))}</h2><p class="page-intro">${esc(t('homeIntro'))}</p></div><div id="add-commute"></div></div><div id="saved" role="group" aria-label="${esc(t('yourCommute'))}"></div>`;
     el('add-commute').append(button(t('addCommute'),()=>{selected=null;show('nearby');},'secondary'));
     for (const f of loaded.favourites) { const choice=button(`${f.label} · ${f.route}`, () => { current = f; show('home'); }, 'choice'); choice.setAttribute('aria-pressed',String(f.id===current.id));el('saved').append(choice); }
-    screen.insertAdjacentHTML('beforeend', `<p class="saved-stop">${esc(i18n.officialText(current.stopName))} ${esc(current.destination ? '→ '+i18n.officialText(current.destination) : t(current.direction === 'O' ? 'outbound' : 'inbound'))}</p><div id="saved-stop-details"></div><div class="card hero"><span>${esc(t('commuteRoute', {label:current.label, route:current.route}))}</span><div id="advice" class="big"></div></div><div id="quick-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('walkBuffer', {walk:current.walkMinutes, buffer:current.bufferMinutes}))}</p><p id="freshness" class="sub"></p><div id="arrivals"></div><section id="why" class="reason-card" hidden><h3>${esc(t('whyTitle'))}</h3><p id="reason"></p></section><p class="sub">${esc(t('adviceEstimate'))}</p><p id="remarks" class="sub"></p><div id="saved-navigation"></div>`);
+    screen.insertAdjacentHTML('beforeend', `<div class="card hero"><span>${esc(t('commuteRoute', {label:current.label, route:current.route}))}</span><div id="advice" class="big"></div><p class="saved-stop">${esc(i18n.officialText(current.stopName))} ${esc(current.destination ? '→ '+i18n.officialText(current.destination) : t(current.direction === 'O' ? 'outbound' : 'inbound'))}</p></div><section class="card commute-info"><div id="quick-plans" class="plan-options" role="group" aria-label="${esc(t('plansTitle'))}"></div><p class="sub">${esc(t('walkBuffer', {walk:current.walkMinutes, buffer:current.bufferMinutes}))}</p><p id="freshness" class="sub"></p><div id="arrival-recovery" class="recovery-actions"></div><div id="arrivals"></div><section id="why" class="reason-card" hidden><h3>${esc(t('whyTitle'))}</h3><p id="reason"></p></section><p id="remarks" class="sub"></p><div id="saved-navigation"></div><div id="saved-stop-details"></div><p class="sub advice-note">${esc(t('adviceEstimate'))}</p></section>`);
     el('saved-stop-details').append(stopDetails(current));savedNavigation(el('saved-navigation'),current);
     const plans = timePlans(current);
     for(const id of PLAN_IDS) {
@@ -200,7 +238,7 @@ function renderPage() {
     el('stop-search').onsubmit=e=>{e.preventDefault();loadSearch(el('stop-query').value);};
     el('latitude').value=manualDraft.latitude??'';el('longitude').value=manualDraft.longitude??'';
     el('manual-location').open=!!manualDraft.open;el('other-options').open=!!manualDraft.otherOpen;
-    el('locationActions').append(button(t('useLocation'),()=>loadNearby(),'secondary'));
+    el('locationActions').append(button(t('useLocation'),requestNearbyLocation,'secondary'));
     el('example').append(button(t('publicExample'),()=>loadNearby({latitude:22.345415,longitude:114.192640})));
     el('manual').append(button(t('findCoordinates'),()=>{
       if(!el('latitude').value||!el('longitude').value){message('enterCoordinates');return;}
@@ -305,7 +343,7 @@ function renderMap(){
 async function loadSearch(query,limit=40){
   captureDrafts();searchQuery=query.trim();if(!searchQuery){message('searchHint');return;}
   reset();const token=generation;searchService=null;searchResult=null;nearbyResult=null;mapView=null;focusedStopId=null;renderPage();message('searchingStops');
-  try{const result=await bus.client.searchStops(searchQuery,{signal:controller.signal,limit});if(token!==generation)return;searchResult=result;mapView=null;if(mapInstance){mapInstance.destroy();mapInstance=null;}message();renderPage();}catch(e){if(token===generation)fail(e);}
+  try{const result=await bus.client.searchStops(searchQuery,{signal:controller.signal,limit});if(token!==generation)return;searchResult=result;mapView=null;if(mapInstance){mapInstance.destroy();mapInstance=null;}message();renderPage();}catch(e){if(token===generation)fail(e,()=>loadSearch(searchQuery,limit));}
 }
 async function loadNearby(point) {
   captureDrafts();reset(); const token = generation; nearbyResult = null;searchService=null;searchResult=null;searchQuery='';focusedStopId=null;
@@ -316,7 +354,7 @@ async function loadNearby(point) {
     nearbyResult = result;manualDraft.otherOpen=false;manualDraft.open=false;
     message(() => [t('nearbyFound', {count:result.stops.length, source:t(result.locationSource)}), result.location.accuracyMeters != null && t('accuracy', {metres:Math.round(result.location.accuracyMeters)})].filter(Boolean).join(' · '));
     if(mapInstance){mapInstance.destroy();mapInstance=null;}mapView=null;renderPage();
-  } catch (e) { if (token === generation) fail(e); }
+  } catch (e) { if (token === generation) fail(e,()=>loadNearby(point)); }
 }
 function renderRoutes(){
   if(!routeResults||!el('routes'))return;
@@ -335,11 +373,12 @@ async function loadRoutes(stop,filter = null) {
   window.scrollTo(0,0); renderPage(); message('loadingRoutes');
   try { const routes = await bus.getRoutesForStop(stop.id, {signal:controller.signal}); if (token !== generation) return;
     routeResults = routeFilter?routes.filter(r=>r.route===routeFilter && (!searchService || (r.direction===searchService.direction && r.serviceType===searchService.serviceType))):routes; message(routeResults.length ? '' : 'noRoutes'); renderRoutes();
-  } catch (e) { if (token === generation) fail(e); }
+  } catch (e) { if (token === generation) fail(e,()=>loadRoutes(stop,filter)); }
 }
 document.querySelector('header').append(languageControl('language-select'));
 const languageStatus = document.createElement('p'); languageStatus.id = 'language-status'; languageStatus.setAttribute('role', 'status'); document.querySelector('header').append(languageStatus);
 document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => { if(b.dataset.page!=='settings')selected=null; show(b.dataset.page); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); else startAdvice(); });
 window.addEventListener('pagehide', reset);
+syncNativeLanguage();
 renderGlobal(); show('home');

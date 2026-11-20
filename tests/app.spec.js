@@ -5,6 +5,8 @@ async function switchLanguage(page,code){
  await page.locator('.return-previous').click();
 }
 const stop='18492910339410B1';
+// Keep fixtures deterministic: exercise official-API fallback instead of the daily real catalogue.
+test.beforeEach(async({page})=>{await page.route('**/data/*.json',route=>route.fulfill({status:503,body:'Fixture uses API'}));});
 async function api(page) {
  await page.route('https://data.etabus.gov.hk/**', async route => {
   const url=route.request().url(); let data;
@@ -20,13 +22,13 @@ test('select real-shaped service, save, reload, refresh failure and delete',asyn
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByRole('button',{name:/Try public example/}).click();await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
  await page.getByRole('button',{name:/1 → Campus/}).click();await page.getByLabel('Commute name').fill('School');await page.getByRole('button',{name:'Save commute'}).click();
  await expect(page.locator('#advice')).toContainText('Leave in');await page.reload();await expect(page.locator('#advice')).toContainText('Leave in');
- await page.route('**/eta/**',r=>r.abort());await page.getByRole('button',{name:'Refresh arrivals'}).click();await expect(page.locator('#advice')).toContainText('Cannot load');
+ await page.route('**/eta/**',r=>r.abort());await page.getByRole('button',{name:'Refresh arrivals'}).click();await expect(page.locator('#advice')).toContainText('Cannot load');await expect(page.locator('#freshness')).toContainText('Last successful update:');await expect(page.locator('#arrival-recovery').getByRole('button',{name:'Try again',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Delete commute'}).click();await expect(page.getByRole('button',{name:'Set up my commute'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });
 test('denied location displays fallback and empty manual coordinates are rejected',async({page})=>{
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
- await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();await page.getByRole('button',{name:'Use my location'}).click();await expect(page.locator('#status')).toContainText('Location access is blocked');
+ await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();await page.getByRole('button',{name:'Use my location'}).click();await page.getByRole('button',{name:'Continue with location',exact:true}).click();await expect(page.locator('#status')).toContainText('Location access is blocked');
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByText('Choose location manually').click();await page.getByRole('button',{name:'Find stops at these coordinates'}).click();await expect(page.locator('#status')).toContainText('Enter both');
 });
 test('all nine languages persist and fit a narrow screen', async({page}) => {
@@ -66,7 +68,7 @@ test('switching languages keeps results, form drafts, saved labels and live coun
 test('manual input and existing errors translate without requesting location again', async({page}) => {
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
  await page.goto('/'); await page.getByRole('button',{name:'Find stops',exact:true}).click();
- await page.getByRole('button',{name:'Use my location',exact:true}).click();
+ await page.getByRole('button',{name:'Use my location',exact:true}).click();await page.getByRole('button',{name:'Continue with location',exact:true}).click();
  await page.getByText('More ways to choose a stop',{exact:true}).click();await page.getByText('Choose location manually',{exact:true}).click();
  await page.getByLabel('Latitude',{exact:true}).fill('22.3');
  await switchLanguage(page,'ja');
@@ -126,7 +128,7 @@ test('absolute arrivals and recommended-bus reason reflect live estimates, then 
  await expect(page.locator('#reason')).toContainText('first bus');await expect(page.locator('#reason')).toContainText('4-minute walk + 2-minute buffer');
  await expect(page.locator('.recommended-arrival')).toHaveCount(1);
  await page.route('**/eta/**',r=>r.abort());await page.getByRole('button',{name:'Refresh arrivals',exact:true}).click();
- await expect(page.locator('#advice')).toContainText('Cannot load');await expect(page.locator('#why')).toBeHidden();await expect(page.locator('#arrivals p')).toHaveCount(0);
+ await expect(page.locator('#advice')).toContainText('Cannot load');await expect(page.locator('#freshness')).toContainText('Last successful update:');await expect(page.locator('#arrival-recovery').getByRole('button',{name:'Try again',exact:true})).toBeVisible();await expect(page.locator('#why')).toBeHidden();await expect(page.locator('#arrivals p')).toHaveCount(0);
 });
 test('search and map fit all nine languages on a narrow phone',async({page})=>{
  await api(page);await page.route('https://tile.openstreetmap.org/**',r=>r.abort());
@@ -190,7 +192,7 @@ async function manualWalk(page){
 test('device walking route stays in the app and survives nine-language re-render without new routing requests',async({page,context})=>{
  await context.grantPermissions(['geolocation']);await context.setGeolocation({latitude:22.3411,longitude:114.1931,accuracy:12});
  let calls=0;await page.route(walkingPattern,r=>{calls++;return r.fulfill({json:walkingResponse});});
- await openWalking(page);expect(calls).toBe(0);await page.getByTestId('walk-device').click();
+ await openWalking(page);expect(calls).toBe(0);await page.getByTestId('walk-device').click();await page.getByRole('button',{name:'Continue with location',exact:true}).click();
  await expect(page.locator('#walking-summary')).toContainText('12 min');await expect(page.locator('#walking-summary')).toContainText('863');
  await expect(page.locator('.walking-route-line')).toHaveCount(1);await expect(page.locator('#walking-origin')).toContainText('22.34110');
  await page.setViewportSize({width:320,height:740});
@@ -204,7 +206,7 @@ test('device walking route stays in the app and survives nine-language re-render
 test('denied location allows a manual starting point; failed recalculation removes the previous path',async({page})=>{
  await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
  let calls=0;await page.route(walkingPattern,r=>{calls++;return r.fulfill({json:walkingResponse});});
- await openWalking(page);await page.getByTestId('walk-device').click();await expect(page.locator('#walking-status')).toContainText('blocked');expect(calls).toBe(0);
+ await openWalking(page);await page.getByTestId('walk-device').click();await page.getByRole('button',{name:'Continue with location',exact:true}).click();await expect(page.locator('#walking-status')).toContainText('blocked');expect(calls).toBe(0);
  await manualWalk(page);await expect(page.locator('#walking-summary')).toContainText('863');await expect(page.locator('#walking-origin')).toContainText('manual location');
  await page.waitForTimeout(1150);await page.route(walkingPattern,r=>r.fulfill({json:{code:'NoRoute',routes:[]}}));
  await page.getByTestId('walk-compute').click();await expect(page.locator('#walking-status')).toContainText('No walkable route');
@@ -253,6 +255,43 @@ test('first visit explains the flow; each navigation destination has a distinct 
  await page.getByRole('button',{name:'Settings',exact:true}).click();await expect(page.locator('#walk')).toHaveCount(0);
  await page.getByRole('button',{name:'Home',exact:true}).click();await page.reload();
  await expect(page.locator('.welcome')).toHaveCount(0);await expect(page.locator('#advice')).toContainText('Leave in');
+});
+
+test('Chinese location explanation allows search without invoking device location',async({page})=>{
+ await api(page);
+ await page.addInitScript(()=>{window.locationRequests=0;Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition(){window.locationRequests++;}}});});
+ await page.goto('/');await page.getByTestId('language-select').selectOption('zh-Hans');
+ await page.getByRole('button',{name:'找车站',exact:true}).click();await page.getByRole('button',{name:'使用我的位置',exact:true}).click();
+ await expect(page.getByRole('dialog')).toContainText('我们会使用你的位置');
+ expect(await page.evaluate(()=>window.locationRequests)).toBe(0);
+ await page.getByRole('button',{name:'不使用定位',exact:true}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('#stop-query')).toBeFocused();
+ expect(await page.evaluate(()=>window.locationRequests)).toBe(0);
+});
+
+test('location denial offers direct search; failed service loading retries the same stop',async({page})=>{
+ await api(page);await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{getCurrentPosition:(ok,fail)=>fail({code:1})}}));
+ await page.goto('/');await page.getByRole('button',{name:'Find stops',exact:true}).click();
+ await page.getByRole('button',{name:'Use my location',exact:true}).click();await page.getByRole('button',{name:'Continue with location',exact:true}).click();
+ await page.locator('#recovery').getByRole('button',{name:'Search for a stop instead',exact:true}).click();await expect(page.locator('#stop-query')).toBeFocused();
+ await page.locator('#stop-query').fill('Chuk Yuen');await page.getByRole('button',{name:'Search',exact:true}).click();
+ await page.locator('#results').getByRole('button',{name:/Chuk Yuen/}).click();
+ await page.route('**/route/',r=>r.fulfill({status:403,body:'unavailable'}));
+ await page.locator('#selected-stop').getByRole('button',{name:'View bus services',exact:true}).click();
+ await expect(page.locator('#recovery').getByRole('button',{name:'Try again',exact:true})).toBeVisible();
+ await expect(page.locator('.selection-summary')).toContainText('Chuk Yuen');
+ await page.unroute('**/route/');await page.locator('#recovery').getByRole('button',{name:'Try again',exact:true}).click();
+ await expect(page.getByRole('button',{name:/1 → Campus/})).toBeVisible();await expect(page.locator('#recovery')).toBeHidden();
+});
+
+test('walking failure retains destination and retry uses the chosen starting point',async({page})=>{
+ await openWalking(page);await page.route(walkingPattern,r=>r.fulfill({json:{code:'NoRoute',routes:[]}}));
+ await manualWalk(page);await expect(page.locator('#walking-status')).toContainText('No walkable route');
+ await expect(page.getByTestId('walking-destination')).toContainText('Chuk Yuen');
+ await expect(page.getByTestId('walking-destination')).toContainText('22.34541, 114.19264');
+ await page.waitForTimeout(1150);await page.route(walkingPattern,r=>r.fulfill({json:walkingResponse}));
+ await page.getByTestId('walking-recovery').getByRole('button',{name:'Try again',exact:true}).click();
+ await expect(page.locator('#walking-summary')).toContainText('863');await expect(page.getByTestId('walking-recovery')).toHaveCount(0);
 });
 
 test('review improvements remove duplicate language and explain manual timing',async({page})=>{

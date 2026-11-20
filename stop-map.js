@@ -53,7 +53,7 @@ export function createStopMap(host, { stops, center, view, selectedStopId, t, na
     marker.on('click',()=>{highlight(stop.id);onSelect(stop);});
     clusters.addLayer(marker);
   });
-  if(center)L.circleMarker([center.latitude,center.longitude],{radius:6,color:'#302B40',fillColor:'#FFFFFF',fillOpacity:1,weight:3}).addTo(map);
+  if(center)L.circleMarker([center.latitude,center.longitude],{radius:6,color:'#203D3D',fillColor:'#FFFFFF',fillOpacity:1,weight:3}).addTo(map);
   map.on('click',e=>map.panTo(e.latlng));
   return {
     select(id){highlight(id);const marker=markers.get(id);if(marker)clusters.zoomToShowLayer(marker,()=>{if(alive)marker.openPopup();});},

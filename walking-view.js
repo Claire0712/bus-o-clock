@@ -31,10 +31,17 @@ export function createWalkingJourney({stop,getLocation,requestRoute}) {
     host.replaceChildren(btn(t('walkBack'),back,'quiet'),node('h2',t('walkTitle')),node('p',name(stop.name),'page-intro'));
     const privacy=node('p',t('walkPrivacy'),'sub walking-privacy');privacy.append(' ',link('FOSSGIS', 'https://routing.openstreetmap.de/about.html'));host.append(privacy);
     const actions=node('div',null,'walking-actions');
-    const gps=btn(t('walkDevice'),()=>calculate(true),'primary');gps.dataset.testid='walk-device';gps.disabled=loading;
+    const gps=btn(t('walkDevice'),async()=>{const allowed=await config.confirmLocation();if(disposed||!host?.isConnected)return;if(allowed)calculate(true);else{picking=true;notice='';redraw();}},'primary');gps.dataset.testid='walk-device';gps.disabled=loading;
     const manual=btn(t('walkManual'),()=>{cancel();picking=!picking;notice='';redraw();});manual.disabled=loading;manual.setAttribute('aria-pressed',String(picking));
     actions.append(gps,manual);host.append(actions);
     const alert=node('p',notice?t(notice):picking?t('walkPickHint'):'','walking-status');alert.id='walking-status';alert.setAttribute('role','status');host.append(alert);
+    if(notice&&!loading){
+      const recovery=node('div',null,'recovery-actions');recovery.dataset.testid='walking-recovery';
+      recovery.append(btn(t('retryAction'),()=>calculate(!origin),'primary'),btn(t('walkManual'),()=>{picking=true;notice='';redraw();}));
+      host.append(recovery);
+    }
+    const destination=node('section',null,'destination-card');destination.dataset.testid='walking-destination';
+    destination.append(node('strong',t('walkDestination')+': '+name(stop.name)),node('p',`${stop.latitude.toFixed(5)}, ${stop.longitude.toFixed(5)}`,'sub'));host.append(destination);
     const mapHost=node('div');mapHost.id='walking-map';mapHost.setAttribute('role','region');mapHost.setAttribute('aria-label',t('walkTitle'));host.append(mapHost);
     map=L.map(mapHost,{zoomControl:false,scrollWheelZoom:false,maxZoom:19});L.control.zoom({zoomInTitle:t('zoomIn'),zoomOutTitle:t('zoomOut')}).addTo(map);map.attributionControl.setPrefix(false);
     map.attributionControl.addAttribution('Routes: <a href="https://routing.openstreetmap.de/about.html" target="_blank" rel="noopener">FOSSGIS / OSRM</a> | <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener">Fix the map</a>');
@@ -50,7 +57,7 @@ export function createWalkingJourney({stop,getLocation,requestRoute}) {
     }
     if(route){
       L.polyline(route.coordinates,{color:'#FFFFFF',weight:9,opacity:1,interactive:false}).addTo(map);
-      L.polyline(route.coordinates,{color:'#65528E',weight:5,opacity:1,className:'walking-route-line',interactive:false}).addTo(map);
+      L.polyline(route.coordinates,{color:'#24564F',weight:5,opacity:1,className:'walking-route-line',interactive:false}).addTo(map);
       const summary=node('p',t('walkSummary',{minutes:Math.max(1,Math.ceil(route.durationSeconds/60)),metres:Math.round(route.distanceMeters)}),'walking-summary');summary.id='walking-summary';host.append(summary);
       host.append(node('p',t('walkPreview'),'sub'));
     }
