@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Bus o\'Clock</string>
+    <string name="title_activity_main">Bus o\'Clock</string>
+    <string name="package_name">hk.edu.busoclock</string>
+    <string name="custom_url_scheme">hk.edu.busoclock</string>
+</resources>

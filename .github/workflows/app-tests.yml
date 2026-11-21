@@ -1,0 +1,86 @@
+name: App integration
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ui
+      - run: npm run build
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;34.0.0'
+      - run: npm ci
+      - run: npm run android:sync
+      - run: ./gradlew assembleDebug lintDebug --console=plain
+        working-directory: android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bus-o-clock-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [browser, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+    concurrency:
+      group: kmb-public-catalogues
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - run: npm ci && npm run build:web
+        working-directory: source
+      - name: Record published source revision
+        working-directory: source
+        run: node -e 'require("fs").writeFileSync("dist/version.json", JSON.stringify({source:process.env.GITHUB_SHA,builtAt:new Date().toISOString()}))'
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: published
+      - name: Publish app and preserve daily public data
+        run: |
+          rsync -a --delete --exclude='.git' --exclude='data' source/dist/ published/
+          touch published/.nojekyll
+          cd published
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Deploy app from ${GITHUB_SHA}"
+            git push origin HEAD:gh-pages
+          fi
+      - name: Request Pages rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds"

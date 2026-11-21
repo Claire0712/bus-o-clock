@@ -1,0 +1,12 @@
+{
+  "name": "@bus-o-clock/data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": { "types": "./index.d.ts", "default": "./src/index.js" } },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "smoke": "node scripts/live-smoke.js"
+  },
+  "engines": { "node": ">=22" }
+}

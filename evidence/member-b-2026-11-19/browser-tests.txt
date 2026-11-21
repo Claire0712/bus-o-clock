@@ -1,0 +1,12 @@
+
+> bus-o-clock-app@0.1.0 test:ui
+> playwright test
+
+
+Running 3 tests using 1 worker
+
+  ✓  1 tests/app.spec.js:13:1 › select real-shaped service, save, reload, refresh failure and delete (940ms)
+  ✓  2 tests/app.spec.js:22:1 › denied location displays fallback and empty manual coordinates are rejected (242ms)
+  ✓  3 tests/app.spec.js:27:1 › stale and missing ETA never produce a departure countdown (209ms)
+
+  3 passed (6.3s)
