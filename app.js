@@ -31,6 +31,7 @@ let notice = () => '', preferenceNotSaved = false;
 let focusedStopId = null;
 let setupFromSearch = false;
 let editingCommute = false, searchService = null, plansOpen = false, settingsReturn = null;
+let pendingLoad = null, resumeLoad = null;
 current = bus.favourites.load().favourites[0];
 
 function message(key = '', values) {
@@ -60,7 +61,7 @@ function focusStopSearch() {
 async function requestNearbyLocation() {
   if (await confirmLocation()) loadNearby(); else focusStopSearch();
 }
-function reset() { walkingJourney?.cancel(); generation++; controller?.abort(); controller = new AbortController(); stopWatch(); stopWatch = () => {}; }
+function reset() { pendingLoad = null; resumeLoad = null; walkingJourney?.cancel(); generation++; controller?.abort(); controller = new AbortController(); stopWatch(); stopWatch = () => {}; }
 function button(text, action, style = 'secondary') {
   const b = document.createElement('button'); b.className = `btn ${style}`; b.textContent = text; b.onclick = action; return b;
 }
@@ -342,19 +343,20 @@ function renderMap(){
 }
 async function loadSearch(query,limit=40){
   captureDrafts();searchQuery=query.trim();if(!searchQuery){message('searchHint');return;}
-  reset();const token=generation;searchService=null;searchResult=null;nearbyResult=null;mapView=null;focusedStopId=null;renderPage();message('searchingStops');
-  try{const result=await bus.client.searchStops(searchQuery,{signal:controller.signal,limit});if(token!==generation)return;searchResult=result;mapView=null;if(mapInstance){mapInstance.destroy();mapInstance=null;}message();renderPage();}catch(e){if(token===generation)fail(e,()=>loadSearch(searchQuery,limit));}
+  reset();const token=generation;searchService=null;searchResult=null;nearbyResult=null;mapView=null;focusedStopId=null;renderPage();message('searchingStops');pendingLoad=()=>loadSearch(searchQuery,limit);
+  try{const result=await bus.client.searchStops(searchQuery,{signal:controller.signal,limit});if(token!==generation)return;searchResult=result;mapView=null;if(mapInstance){mapInstance.destroy();mapInstance=null;}message();renderPage();}catch(e){if(token===generation)fail(e,()=>loadSearch(searchQuery,limit));}finally{if(token===generation)pendingLoad=null;}
 }
 async function loadNearby(point) {
   captureDrafts();reset(); const token = generation; nearbyResult = null;searchService=null;searchResult=null;searchQuery='';focusedStopId=null;
   if(point)manualDraft={...manualDraft,latitude:point.latitude,longitude:point.longitude};
   renderPage(); message(point ? 'searchingManual' : 'searchingDevice');
+  pendingLoad=()=>loadNearby(point);
   try {
     const result = await bus.getNearbyStops({point, signal:controller.signal}); if (token !== generation) return;
     nearbyResult = result;manualDraft.otherOpen=false;manualDraft.open=false;
     message(() => [t('nearbyFound', {count:result.stops.length, source:t(result.locationSource)}), result.location.accuracyMeters != null && t('accuracy', {metres:Math.round(result.location.accuracyMeters)})].filter(Boolean).join(' · '));
     if(mapInstance){mapInstance.destroy();mapInstance=null;}mapView=null;renderPage();
-  } catch (e) { if (token === generation) fail(e,()=>loadNearby(point)); }
+  } catch (e) { if (token === generation) fail(e,()=>loadNearby(point)); } finally { if(token===generation)pendingLoad=null; }
 }
 function renderRoutes(){
   if(!routeResults||!el('routes'))return;
@@ -370,15 +372,25 @@ function renderRoutes(){
 }
 async function loadRoutes(stop,filter = null) {
   reset(); const token = generation; page = 'routes'; routeStop = stop; routeResults = null;routeFilter=filter;
-  window.scrollTo(0,0); renderPage(); message('loadingRoutes');
+  window.scrollTo(0,0); renderPage(); message('loadingRoutes');pendingLoad=()=>loadRoutes(stop,filter);
   try { const routes = await bus.getRoutesForStop(stop.id, {signal:controller.signal}); if (token !== generation) return;
     routeResults = routeFilter?routes.filter(r=>r.route===routeFilter && (!searchService || (r.direction===searchService.direction && r.serviceType===searchService.serviceType))):routes; message(routeResults.length ? '' : 'noRoutes'); renderRoutes();
-  } catch (e) { if (token === generation) fail(e,()=>loadRoutes(stop,filter)); }
+  } catch (e) { if (token === generation) fail(e,()=>loadRoutes(stop,filter)); } finally { if(token===generation)pendingLoad=null; }
 }
 document.querySelector('header').append(languageControl('language-select'));
 const languageStatus = document.createElement('p'); languageStatus.id = 'language-status'; languageStatus.setAttribute('role', 'status'); document.querySelector('header').append(languageStatus);
 document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => { if(b.dataset.page!=='settings')selected=null; show(b.dataset.page); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); else startAdvice(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    const interruptedLoad = pendingLoad;
+    reset();
+    resumeLoad = interruptedLoad;
+  } else {
+    const restart = resumeLoad;
+    resumeLoad = null;
+    if (restart) restart(); else startAdvice();
+  }
+});
 window.addEventListener('pagehide', reset);
 syncNativeLanguage();
 renderGlobal(); show('home');

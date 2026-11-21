@@ -344,3 +344,20 @@ test('direction-first search saves the selected direction and exact boarding seq
  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('bus-o-clock.favourites.v1')).favourites[0]);
  expect(saved).toMatchObject({stopId:stop,route:'1',direction:'O',serviceType:'1',stopSequence:1});
 });
+
+test('pending stop search restarts after returning from background',async({page})=>{
+ await api(page);
+ let calls=0;
+ await page.route('**/kmb/stop',async route=>{
+  calls++;
+  if(calls===1){await new Promise(resolve=>setTimeout(resolve,1000));try{await route.abort();}catch{}return;}
+  await route.fulfill({json:{generated_timestamp:new Date().toISOString(),data:[{stop,name_en:'Chuk Yuen',lat:'22.345415',long:'114.192640'}]}});
+ });
+ await page.goto('/');await page.getByRole('button',{name:'Set up my commute'}).click();
+ await page.locator('#stop-query').fill('Chuk');await page.getByRole('button',{name:'Search',exact:true}).click();
+ await expect.poll(()=>calls).toBe(1);
+ await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});
+ await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'));});
+ await expect(page.locator('#results .stop-card')).toHaveCount(1);
+ await expect(page.locator('#status')).not.toContainText('Searching');
+});
