@@ -71,6 +71,8 @@ jobs:
       - name: Publish app and preserve daily public data
         run: |
           rsync -a --delete --exclude='.git' --exclude='data' source/dist/ published/
+          mkdir -p published/demo
+          rsync -a --delete source/web-demo/ published/demo/
           touch published/.nojekyll
           cd published
           git config user.name 'github-actions[bot]'
