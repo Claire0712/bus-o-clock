@@ -10,6 +10,17 @@ For GitHub Pages use `npm run build:web` (project subpath). Android continues to
 
 LSGI3212 location-based Android commuting assistant for Hong Kong.
 
+## Which version should I use?
+
+- **Website:** use the online app above. The current interface is the green design.
+- **Source:** `main` is the integrated application; `feat/data-location` is its development history.
+- **Deployment:** `gh-pages` contains generated website files and public catalogue snapshots, not editable source. Successful tests and Android builds on `main` automatically publish the website. `/version.json` identifies the deployed source commit.
+- **Design reference:** `ui-preview.html` is an old disconnected prototype, not the current app.
+- **Android:** use the latest release assets or the `bus-o-clock-debug-apk` artifact from a successful App integration workflow. The 6 November release predates the green UI.
+
+For an already-open old browser tab, reload the page; use a hard refresh if it still displays the previous interface. Build checks do not replace physical-phone location and permission testing.
+
+
 ## Live application and Android build
 
 The integrated application is now `index.html` / `app.js`; `ui-preview.html` remains
@@ -63,7 +74,7 @@ Interface evidence and trial materials: [UI iteration notes](docs/UI-ITERATION.m
 
 ## Interface languages
 
-Choose a language in the header or Settings: English, Traditional Chinese, Simplified Chinese, Japanese, Korean, French, Spanish, German or Portuguese. The choice is stored on the current browser/device. Changing language preserves the selected stop, route, saved commutes and unsaved commute-form inputs.
+Choose a language on the welcome screen or in Settings: English, Traditional Chinese, Simplified Chinese, Japanese, Korean, French, Spanish, German or Portuguese. The choice is stored on the current browser/device. Changing language preserves the selected stop, route, saved commutes and unsaved commute-form inputs.
 
 UI labels, validation, status messages and departure advice are translated. KMB stop names, destinations and service remarks use the official Traditional/Simplified Chinese fields for Chinese interfaces and the official English field for other interfaces. User-created commute labels remain unchanged. Translations have not yet been reviewed by native speakers of every language.
 
