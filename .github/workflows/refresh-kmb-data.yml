@@ -1,0 +1,67 @@
+name: Refresh public KMB catalogues
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 21 * * *'
+  push:
+    branches: [main]
+    paths: ['.github/workflows/refresh-kmb-data.yml']
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: kmb-public-catalogues
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      - name: Download and verify official daily catalogues
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, time, subprocess
+          from datetime import datetime, timezone
+          base = 'https://data.etabus.gov.hk/v1/transport/kmb/'
+          output = pathlib.Path('data')
+          output.mkdir(exist_ok=True)
+          snapshots = {}
+          for name, path in [('stop', 'stop'), ('route', 'route/'), ('route-stop', 'route-stop/')]:
+              for attempt in range(3):
+                  try:
+                      raw = subprocess.check_output(['curl', '--fail', '--silent', '--show-error', '--max-time', '45', '--header', 'Accept: application/json', base + path])
+                      value = json.loads(raw)
+                      assert isinstance(value.get('data'), list) and value['data'], 'Empty or invalid catalogue'
+                      generated = datetime.fromisoformat(value['generated_timestamp'].replace('Z', '+00:00'))
+                      age = (datetime.now(timezone.utc) - generated).total_seconds()
+                      assert -300 <= age < 36 * 3600, 'Upstream catalogue is too old'
+                      if name == 'stop':
+                          for row in value['data']:
+                              assert len(row['stop']) == 16 and -90 <= float(row['lat']) <= 90 and -180 <= float(row['long']) <= 180
+                      value['snapshot_retrieved_at'] = datetime.now(timezone.utc).isoformat()
+                      value['snapshot_source'] = base + path
+                      snapshots[name] = value
+                      break
+                  except Exception:
+                      if attempt == 2:
+                          raise
+                      time.sleep(2 * (attempt + 1))
+          for name, value in snapshots.items():
+              (output / (name + '.json')).write_text(json.dumps(value, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+              print(name, len(value['data']), 'rows', value['snapshot_retrieved_at'])
+          PY
+      - name: Commit public data only
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/stop.json data/route.json data/route-stop.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'Refresh official KMB stop and route catalogues'
+          git pull --rebase origin gh-pages
+          git push origin HEAD:gh-pages
+      - name: Request Pages rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds"
